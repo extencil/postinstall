@@ -4,8 +4,9 @@
 > ssh, nftables, fail2ban, sysctl, updates, tools, docker, cloudflare tunnel
 > and mesh, dotfiles. idempotent, config driven, with a read-only audit.
 
-target is debian 13 (trixie) only. bash 5, systemd, apt. no package, no build
-step, no ci, no test suite.
+target is debian 13 (trixie) only. bash 5, systemd, apt; the ssh decoy uses
+system python and Debian's python3-paramiko. no build step or ci. isolated
+decoy protocol checks live in tests/; target dependencies stay on target hosts.
 
 ## start here
 

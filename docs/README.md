@@ -7,6 +7,7 @@ will forget by the next provider.
 - [debian 13 notes](debian-13.md)
 - hardening
   - [ssh](hardening/ssh.md)
+  - [ssh prank](hardening/ssh-prank.md)
   - [firewall](hardening/firewall.md)
   - [fail2ban](hardening/fail2ban.md)
   - [sysctl](hardening/sysctl.md)

@@ -19,7 +19,7 @@ VERSION="0.1.0"
 # ----------------------------- defaults -----------------------------
 
 : "${NEW_USER:=ops}"
-: "${SSH_PORT:=22}"
+: "${SSH_PORT:=1}"
 : "${HOSTNAME_SET:=}"
 : "${TIMEZONE:=UTC}"
 : "${SSH_PUBKEY_FILE:=}"
@@ -27,6 +27,7 @@ VERSION="0.1.0"
 : "${SSH_ALLOW_USERS:=}"
 : "${SSH_ALLOW_PASSWORD:=0}"
 : "${SSH_ALLOW_TCP_FORWARDING:=1}"
+: "${SSH_PRANK_BANNER_FILE:=}"
 : "${EXTRA_TCP_PORTS:=}"
 : "${EXTRA_UDP_PORTS:=}"
 : "${SUDO_NOPASSWD:=0}"
@@ -34,6 +35,7 @@ VERSION="0.1.0"
 : "${ENABLE_USERS:=1}"
 : "${ENABLE_FIREWALL:=1}"
 : "${ENABLE_SSH:=1}"
+: "${ENABLE_SSH_PRANK:=1}"
 : "${ENABLE_FAIL2BAN:=1}"
 : "${ENABLE_SYSCTL:=1}"
 : "${ENABLE_UPDATES:=1}"
@@ -67,7 +69,7 @@ SKIP=""
 CONFIG_FILE=""
 DEBIAN_CODENAME=$(debian_codename)
 
-MODULES=(preflight users firewall ssh fail2ban sysctl updates tools shell
+MODULES=(preflight users firewall ssh ssh_prank fail2ban sysctl updates tools shell
          docker python node go cloudflared warp dotfiles verify)
 
 # ------------------------------ usage -------------------------------
@@ -97,7 +99,7 @@ modules:
 
 examples:
   sudo bash ${0##*/} --dry-run
-  sudo bash ${0##*/} --only firewall,ssh,fail2ban
+  sudo bash ${0##*/} --only firewall,ssh,ssh_prank,fail2ban
   sudo bash ${0##*/} --skip docker,node,go --config ~/vps.env
 
 config precedence: flags > config file > environment > defaults.
@@ -230,6 +232,12 @@ if [[ ${AUDIT_ONLY:-0} == 1 ]]; then
   exec bash "$SCRIPT_DIR/audit/debian13-audit.sh" "${args[@]}"
 fi
 
+# Reject invalid port input before preflight or the firewall changes anything.
+validate_ssh_port
+if [[ $SSH_PORT == 22 ]] && { module_enabled ssh_prank || service_active postinstall-ssh-prank; }; then
+  die "SSH_PORT=22 conflicts with ssh_prank. choose another real ssh port or stop and disable the decoy"
+fi
+
 # ------------------------------ logging -----------------------------
 
 if ((DRY_RUN)); then
@@ -266,6 +274,7 @@ for id in "${MODULES[@]}"; do
     users) mod_file="$SCRIPT_DIR/lib/modules/10-users.sh" ;;
     firewall) mod_file="$SCRIPT_DIR/lib/modules/20-firewall.sh" ;;
     ssh) mod_file="$SCRIPT_DIR/lib/modules/30-ssh.sh" ;;
+    ssh_prank) mod_file="$SCRIPT_DIR/lib/modules/35-ssh-prank.sh" ;;
     fail2ban) mod_file="$SCRIPT_DIR/lib/modules/40-fail2ban.sh" ;;
     sysctl) mod_file="$SCRIPT_DIR/lib/modules/50-sysctl.sh" ;;
     updates) mod_file="$SCRIPT_DIR/lib/modules/60-updates.sh" ;;

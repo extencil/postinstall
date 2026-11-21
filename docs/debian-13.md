@@ -23,7 +23,7 @@ port is configured on the socket, not in `sshd_config`:
 # /etc/systemd/system/ssh.socket.d/10-postinstall-port.conf
 [Socket]
 ListenStream=
-ListenStream=2222
+ListenStream=1
 ```
 
 the first empty `ListenStream` clears the distro value, then the second line

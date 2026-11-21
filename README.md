@@ -51,11 +51,14 @@ root shell. use the provider console if you enjoy not being locked out.
 ## what runs, in order
 
 order is not decoration. the firewall opens `SSH_PORT` before sshd moves to it,
-and fail2ban starts after the ruleset exists.
+and fail2ban starts after the ruleset exists. real ssh defaults to `1/tcp`;
+use `ssh -p 1 ops@example.com` for a fresh deployment. the decoy takes `22/tcp`
+after real ssh moves. existing configs keep their explicit `SSH_PORT`; change
+`22` before upgrading with the decoy enabled.
 
 ```mermaid
 flowchart LR
-    preflight --> users --> firewall --> ssh --> fail2ban --> sysctl
+    preflight --> users --> firewall --> ssh --> ssh_prank --> fail2ban --> sysctl
     sysctl --> updates --> tools --> shell --> docker --> python
     python --> cloudflare --> dotfiles --> audit
 ```
@@ -68,7 +71,8 @@ you put a token in the config.
 | `preflight` | debian check, apt index, timezone, timesyncd, hostname |
 | `users` | creates `NEW_USER`, sudo, ssh key, locks the root password |
 | `firewall` | nftables, input drop, only ssh + your extra ports |
-| `ssh` | key only, no root, hardened drop-in, socket aware |
+| `ssh` | key only, no root, real ssh on tcp/1, socket aware |
+| `ssh_prank` | reject-only decoy on tcp/22, bounded connections, separate service |
 | `fail2ban` | sshd jail reading the journal, bans in nftables |
 | `sysctl` | kernel and network knobs, the safe ones |
 | `updates` | unattended security upgrades, no surprise reboots |
@@ -87,7 +91,7 @@ flags:
 
 ```bash
 sudo bash debian13-postinstall.sh --dry-run
-sudo bash debian13-postinstall.sh --only firewall,ssh,fail2ban
+sudo bash debian13-postinstall.sh --only firewall,ssh,ssh_prank,fail2ban
 sudo bash debian13-postinstall.sh --skip docker,node,go
 sudo bash debian13-postinstall.sh --user ops --port 2222 --timezone Europe/Amsterdam
 sudo bash debian13-postinstall.sh --list
@@ -108,7 +112,7 @@ the parts people touch:
 
 ```bash
 NEW_USER=ops
-SSH_PORT=22
+SSH_PORT=1
 TIMEZONE=UTC
 SSH_PUBKEY_FILE=/root/.ssh/authorized_keys
 
@@ -126,7 +130,8 @@ ENABLE_WARP=0
 | key | default | what |
 | --- | --- | --- |
 | `NEW_USER` | `ops` | the human account |
-| `SSH_PORT` | `22` | sshd port, firewall follows |
+| `SSH_PORT` | `1` | real ssh port, firewall follows; decoy uses `22` |
+| `SSH_PRANK_BANNER_FILE` | empty | optional public UTF-8 banner for the decoy |
 | `HOSTNAME_SET` | empty | leave the provider hostname alone |
 | `TIMEZONE` | `UTC` | iana name |
 | `SSH_PUBKEY_FILE` | empty | falls back to `/root/.ssh/authorized_keys` |
@@ -166,11 +171,11 @@ sudo bash audit/debian13-audit.sh --config config/postinstall.env
   ok   sshd permitrootlogin no
   ok   sshd passwordauthentication no
   ok   drop-in /etc/ssh/sshd_config.d/00-postinstall.conf present
-  ok   something listens on tcp/2222
+  ok   something listens on tcp/1
 == firewall
   ok   table inet filter present
   ok   input policy drop
-  ok   tcp/2222 allowed in
+  ok   tcp/1 allowed in
 == score
   31 ok  2 warn  0 fail  3 skip
 ```
@@ -215,6 +220,7 @@ lands in the same place instead of inventing its own rules.
 | --- | --- |
 | [debian 13 notes](docs/debian-13.md) | the box is trixie and something behaves oddly |
 | [ssh](docs/hardening/ssh.md) | port changed, socket activation, lockout recovery |
+| [ssh prank](docs/hardening/ssh-prank.md) | port 22 decoy, limits, deployment and recovery |
 | [firewall](docs/hardening/firewall.md) | adding a port, docker + nftables, debugging drops |
 | [fail2ban](docs/hardening/fail2ban.md) | checking or lifting a ban |
 | [sysctl](docs/hardening/sysctl.md) | wondering what a knob does and why it is not here |
@@ -242,6 +248,8 @@ providers hand v6 out over RA and disabling it drops the address), docker's
 rootless userns settings, and anything that needs a reboot to prove itself.
 
 ## contributing
+
+pending work and verification checks live in [TODO.md](TODO.md).
 
 issues and prs are welcome. keep it boring: apt packages over curl installers,
 idempotent over clever, one module per topic, and update the audit when you add

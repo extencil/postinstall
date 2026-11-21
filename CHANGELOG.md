@@ -3,6 +3,24 @@
 all notable changes to this repo. format loosely follows keep a changelog,
 versions follow semver for the scripts.
 
+## [unreleased]
+
+### added
+
+- `ssh_prank` module: a bundled Paramiko decoy on tcp/22, target-host apt
+  dependencies, bounded connections, private host key and sandboxed systemd
+  service, with config, live audit checks and recovery documentation
+- verification backlog for GitHub public-key import, access safety and
+  disposable-host deployment evidence
+
+### changed
+
+- real ssh defaults to tcp/1 across deployment, fail2ban, audit and docs;
+  existing config values still win, and invalid port numbers abort before changes
+- nftables port sets use comma-separated elements when multiple ports are set
+- ssh socket and service restart together when configuration changes, and the
+  audit detects additional effective sshd ports
+
 ## [0.1.0] - 2026-11-21
 
 first version that actually deploys a box.

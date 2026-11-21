@@ -14,9 +14,18 @@ module_firewall() {
     log_ok "ufw disabled, nftables owns the ruleset now"
   fi
 
-  local tcp_ports=${SSH_PORT:-22} udp_ports=""
+  local tcp_ports=${SSH_PORT:-1} udp_ports=""
+  # Skipping a module does not stop a previously deployed service.
+  if module_enabled ssh_prank || service_active postinstall-ssh-prank; then
+    [[ $SSH_PORT != 22 ]] || die "the running decoy conflicts with SSH_PORT=22"
+    tcp_ports+=" 22"
+  fi
   [[ -n ${EXTRA_TCP_PORTS:-} ]] && tcp_ports="$tcp_ports ${EXTRA_TCP_PORTS//,/ }"
   [[ -n ${EXTRA_UDP_PORTS:-} ]] && udp_ports=${EXTRA_UDP_PORTS//,/ }
+
+  # nft set elements need commas, including when extras are space separated.
+  tcp_ports=$(tr ' ' '\n' <<<"$tcp_ports" | sed '/^$/d' | sort -nu | paste -sd, -)
+  udp_ports=$(tr ' ' '\n' <<<"$udp_ports" | sed '/^$/d' | sort -nu | paste -sd, -)
 
   local tcp_line udp_line
   tcp_line="        tcp dport { $tcp_ports } accept"

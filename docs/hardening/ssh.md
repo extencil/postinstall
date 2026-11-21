@@ -1,6 +1,7 @@
 # ssh
 
-goal: the only way in is a key, for one non-root user, on a port i know.
+goal: the only way in is a key, for one non-root user. real ssh defaults to
+`1/tcp`. a separate [reject-only decoy](ssh-prank.md) owns `22/tcp`.
 
 ## what gets written
 
@@ -47,7 +48,7 @@ debian 13 listens through `ssh.socket`, not `ssh.service`. the port lives here:
 # /etc/systemd/system/ssh.socket.d/10-postinstall-port.conf
 [Socket]
 ListenStream=
-ListenStream=2222
+ListenStream=1
 ```
 
 the blank `ListenStream` resets the unit's own value before setting yours.
@@ -59,7 +60,7 @@ grep sshd` shows the truth.
 ## changing the port later
 
 1. edit `SSH_PORT` in the config
-2. `sudo bash debian13-postinstall.sh --only firewall,ssh,fail2ban`
+2. `sudo bash debian13-postinstall.sh --only firewall,ssh,ssh_prank,fail2ban`
 3. the firewall opens the new port before sshd moves, fail2ban follows
 4. open a new session on the new port before closing the old one
 
@@ -84,8 +85,18 @@ without a session: provider console or rescue mode, edit
 firewall is a separate failure: if the port is not in the nftables ruleset no
 amount of sshd fixing helps.
 
-## why not port 22 with fail2ban
+## why port 1
 
-you can. the script does not care. a non-default port removes noise, not
-determination. fail2ban and keys do the actual work. changing the port is a
-preference, not a security boundary.
+port `1/tcp` is the chosen default to reduce noise aimed at common ssh ports.
+it does not stop a full port scan. authentication stays key-only and fail2ban
+protects real ssh on the configured port.
+
+existing config files override the new default. change `SSH_PORT=22` to
+`SSH_PORT=1` to adopt it, and allow tcp/1 at the provider firewall.
+keep the current session open and prove a separate login works:
+
+```bash
+ssh -p 1 ops@example.com
+```
+
+`SSH_PORT=22` is rejected before changes when the decoy is selected or running.

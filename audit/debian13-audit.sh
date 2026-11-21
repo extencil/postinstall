@@ -13,7 +13,9 @@ ROOT_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
 VERSION="0.1.0"
 
 NEW_USER=ops
-SSH_PORT=22
+SSH_PORT=1
+ENABLE_SSH_PRANK=1
+EXTRA_TCP_PORTS=""
 SUDO_NOPASSWD=0
 DOTFILES_REPO=""
 ENABLE_SHELL=1
@@ -236,7 +238,13 @@ else
     fi
     check_sshd x11forwarding no
     check_sshd maxauthtries 3
-    check_sshd port "$SSH_PORT"
+    ports=$(awk '$1 == "port" {print $2}' <<<"$sshd_t")
+    if [[ $ports == "$SSH_PORT" ]]; then
+      ok "sshd port $SSH_PORT only"
+    else
+      bad "sshd ports differ from SSH_PORT=$SSH_PORT"
+      detail "check all Port directives, including provider drop-ins"
+    fi
   fi
 
   if [[ -f /etc/ssh/sshd_config.d/00-postinstall.conf ]]; then
@@ -257,6 +265,74 @@ else
 
   others=$(grep -lE '^\s*PasswordAuthentication\s+yes' /etc/ssh/sshd_config /etc/ssh/sshd_config.d/*.conf 2>/dev/null | grep -v 00-postinstall || true)
   [[ -n $others ]] && warn "password auth re-enabled in: $(tr '\n' ' ' <<<"$others")"
+fi
+
+# ------------------------------ ssh prank ---------------------------
+
+section "ssh prank"
+
+prank_unit=/etc/systemd/system/postinstall-ssh-prank.service
+if [[ ${ENABLE_SSH_PRANK:-1} != 1 ]]; then
+  skip "ssh prank disabled in config"
+  if unit_active postinstall-ssh-prank; then
+    warn "ssh prank still running; disabling a module does not stop its service"
+  fi
+elif [[ ! -f $prank_unit ]]; then
+  bad "ssh prank enabled but service is not installed"
+else
+  for path in "$prank_unit" /usr/local/lib/postinstall/ssh-prank.py /etc/postinstall/ssh-prank-banner.txt; do
+    if [[ -f $path ]] && [[ $(stat -c '%u:%g:%a' "$path" 2>/dev/null) == 0:0:644 ]]; then
+      ok "$path owned by root, mode 644"
+    else
+      bad "$path missing or has unexpected ownership or mode"
+    fi
+  done
+  if [[ $SSH_PORT == 22 ]]; then
+    bad "real ssh and the decoy are configured for the same port"
+  fi
+  if unit_active postinstall-ssh-prank; then
+    ok "ssh prank service active"
+  else
+    bad "ssh prank service inactive"
+  fi
+  if unit_enabled postinstall-ssh-prank; then
+    ok "ssh prank service enabled"
+  else
+    bad "ssh prank service not enabled"
+  fi
+  if ! has ss; then
+    skip "ssh prank listener check needs ss"
+  elif ! is_root; then
+    skip "ssh prank listener ownership check needs root"
+  else
+    prank_pid=$(systemctl show -p MainPID --value postinstall-ssh-prank 2>/dev/null)
+    prank_listener=$(ss -Hltnp 'sport = :22' 2>/dev/null)
+    if [[ $prank_pid =~ ^[1-9][0-9]*$ ]] &&
+       [[ -n $prank_listener ]] &&
+       ! grep -v "pid=$prank_pid," <<<"$prank_listener" | grep -q .; then
+      ok "all tcp/22 listeners belong to the ssh prank service"
+    else
+      bad "tcp/22 listener does not belong exclusively to the ssh prank service"
+    fi
+    key=/var/lib/private/postinstall-ssh-prank/host_key
+    if [[ -f $key ]] && [[ $(stat -c '%a' "$key") == 600 ]]; then
+      ok "ssh prank private host key mode 600"
+    else
+      bad "ssh prank private host key missing or not mode 600"
+    fi
+  fi
+  for setting in 'DynamicUser=yes' 'NoNewPrivileges=yes' 'ProtectSystem=strict' 'Type=notify'; do
+    if [[ $(systemctl show -p "${setting%%=*}" --value postinstall-ssh-prank 2>/dev/null) == "${setting#*=}" ]]; then
+      ok "ssh prank $setting"
+    else
+      bad "ssh prank effective $setting missing"
+    fi
+  done
+  if [[ -r /etc/postinstall/ssh-prank-banner.txt ]] && [[ -s /etc/postinstall/ssh-prank-banner.txt ]]; then
+    ok "ssh prank banner present"
+  else
+    bad "ssh prank banner missing or unreadable"
+  fi
 fi
 
 # ------------------------------ firewall ----------------------------
@@ -292,6 +368,14 @@ else
       ok "tcp/$SSH_PORT allowed in"
     else
       bad "tcp/$SSH_PORT not allowed, good luck"
+    fi
+
+    if [[ ${ENABLE_SSH_PRANK:-1} == 1 ]] || unit_active postinstall-ssh-prank; then
+      if grep -Eq 'tcp dport.*\b22\b.*accept' <<<"$input"; then
+        ok "tcp/22 decoy allowed in"
+      else
+        bad "tcp/22 decoy not allowed in"
+      fi
     fi
 
     forward=$(nft list chain inet filter forward 2>/dev/null)

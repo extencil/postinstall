@@ -18,7 +18,7 @@ ignoreip = 127.0.0.1/8 ::1
 
 [sshd]
 enabled = true
-port = 22
+port = 1
 mode = aggressive
 ```
 
@@ -31,6 +31,9 @@ mode = aggressive
   disconnect spam). more matches, still low false positives with keys only.
 - `ignoreip` only localhost by default. add your admin addresses or the
   cloudflare mesh range if you connect through it.
+
+the jail follows `SSH_PORT` and watches real sshd. the decoy runs as a
+separate service, and its traffic does not feed this jail.
 
 ## commands
 

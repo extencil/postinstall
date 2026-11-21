@@ -28,7 +28,7 @@ ignoreip = 127.0.0.1/8 ::1
 
 [sshd]
 enabled = true
-port = ${SSH_PORT:-22}
+port = ${SSH_PORT:-1}
 mode = aggressive
 EOF
 
@@ -39,7 +39,7 @@ EOF
   if [[ $LAST_WRITE_CHANGED == 1 ]] || ! service_active fail2ban; then
     enable_now fail2ban
     run systemctl restart fail2ban
-    log_ok "fail2ban running, sshd jail on port ${SSH_PORT:-22}"
+    log_ok "fail2ban running, sshd jail on port ${SSH_PORT:-1}"
   else
     log_skip "fail2ban already running"
   fi

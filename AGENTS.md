@@ -12,7 +12,8 @@ shell scripts that turn a fresh debian 13 vps into a known-good box.
 - `config/postinstall.env` holds the opinions. gitignored, example committed.
 - `lib/modules/*.sh` one file per topic, sourced by the entrypoint in order.
 
-bash 5, systemd, apt. no package, no build step, no ci, no runtime language.
+bash 5, systemd, apt. the ssh decoy uses system python and python3-paramiko
+from apt on the target host. no build step, no ci, no pip environment.
 
 ## the contract
 
@@ -58,6 +59,7 @@ modules and their places:
 | users | `10-users.sh` | `ENABLE_USERS` | `docs/hardening/ssh.md` |
 | firewall | `20-firewall.sh` | `ENABLE_FIREWALL` | `docs/hardening/firewall.md` |
 | ssh | `30-ssh.sh` | `ENABLE_SSH` | `docs/hardening/ssh.md` |
+| ssh_prank | `35-ssh-prank.sh` | `ENABLE_SSH_PRANK` | `docs/hardening/ssh-prank.md` |
 | fail2ban | `40-fail2ban.sh` | `ENABLE_FAIL2BAN` | `docs/hardening/fail2ban.md` |
 | sysctl | `50-sysctl.sh` | `ENABLE_SYSCTL` | `docs/hardening/sysctl.md` |
 | updates | `60-updates.sh` | `ENABLE_UPDATES` | `docs/hardening/updates.md` |
@@ -74,7 +76,8 @@ modules and their places:
 
 run order is the array at the top of the entrypoint, not the file names,
 although they match on purpose: users exist before ssh hardens, the firewall
-opens the port before sshd moves, fail2ban starts after the ruleset.
+opens the port before sshd moves, the decoy starts after real ssh leaves
+port 22, and fail2ban starts after the ruleset.
 
 ## how a run works
 
@@ -141,7 +144,7 @@ if any of 1-8 is missing, say so instead of calling it done.
 
 ## testing
 
-there is no test suite. these are the gates:
+the shell installer has no general test suite. these are the gates:
 
 ```bash
 # syntax, every file
@@ -159,6 +162,12 @@ bash debian13-postinstall.sh --version
 bash audit/debian13-audit.sh --help
 bash audit/debian13-audit.sh --no-color    # read only, full picture needs root
 ```
+
+the decoy has isolated protocol and module checks in `tests/test_ssh_prank.py`.
+run `python3 -B -m unittest discover -s tests -v` in a disposable debian 13
+container with `python3-paramiko` available. these checks use temporary keys,
+loopback sockets and mocked deploy commands; they do not run the entrypoint.
+target dependencies belong in target-host modules, not the developer's WSL.
 
 a full `--dry-run` needs root and a debian 13 host. do it in a disposable vm,
 read the output, then throw the vm away. never "just run it" on a machine you

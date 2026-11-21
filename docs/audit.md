@@ -30,7 +30,8 @@ exit codes:
 | system | debian 13, systemd as pid 1, clock sync, pending reboot, apparmor |
 | user and sudo | user exists, sudo and docker group, key file and modes, root locked |
 | ssh | effective `sshd -T` values, drop-in present, listener on the port, password leftovers |
-| firewall | nftables active, `table inet filter`, drop policies, ssh and extra ports |
+| ssh prank | service active/enabled, tcp/22 ownership, host key mode, effective sandbox settings, banner |
+| firewall | nftables active, `table inet filter`, drop policies, real ssh, decoy and extra ports |
 | fail2ban | service, sshd jail, current and total bans |
 | sysctl | every key in the deployed drop-in compared with the running kernel |
 | updates | package, service, periodic config, apt timer |

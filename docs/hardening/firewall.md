@@ -18,7 +18,7 @@ table inet filter {
         meta l4proto icmp accept
         meta l4proto ipv6-icmp accept
 
-        tcp dport { 22 } accept
+        tcp dport { 1, 22 } accept
     }
 }
 ```
@@ -38,7 +38,10 @@ EXTRA_TCP_PORTS="80 443"    # space or comma separated
 EXTRA_UDP_PORTS="51820"
 ```
 
-ssh is always open, cloudflare tunnels need nothing (outbound only).
+real ssh is always open on `SSH_PORT` (`1/tcp` by default). tcp/22 is also
+allowed when the decoy module is selected or its deployed service is active.
+skipping a module does not stop an existing service. cloudflare tunnels need
+nothing (outbound only).
 
 ## docker, the annoying part
 

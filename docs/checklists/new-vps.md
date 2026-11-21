@@ -7,7 +7,8 @@ provider day. ten minutes, no thinking required.
 - [ ] note the provider console url, you will need it if ssh breaks
 - [ ] copy the public key into `SSH_PUBKEY_FILE` or make sure the provider
       injected one into `/root/.ssh/authorized_keys`
-- [ ] pick the new user name and ssh port in the config
+- [ ] pick the new user name and ssh port in the config (`1/tcp` by default)
+- [ ] allow real ssh at the provider firewall
 - [ ] decide cloudflare: named tunnel, mesh connector, both, none
 - [ ] put tokens in `/root/.secrets/*.token` with `chmod 600`
 - [ ] `config/postinstall.env` exists, `chmod 600`, not in git
@@ -26,6 +27,7 @@ would write and every package it would install. no state changes.
 
 - [ ] open a second terminal, log in as `NEW_USER` on `SSH_PORT`
 - [ ] `sudo -v` works
+- [ ] tcp/22 shows the prank banner and refuses authentication
 - [ ] `sudo bash audit/debian13-audit.sh` says zero fails
 - [ ] `docker run --rm hello-world` if docker is on
 - [ ] `cloudflared` unit active and the dashboard shows the tunnel healthy

@@ -24,7 +24,7 @@ module_ssh() {
   # 50-cloud-init.conf which loves re-enabling password auth.
   write_file /etc/ssh/sshd_config.d/00-postinstall.conf 0600 <<EOF
 # managed by postinstall - edit the script, not this file
-Port ${SSH_PORT:-22}
+Port ${SSH_PORT:-1}
 AddressFamily any
 
 PermitRootLogin no
@@ -50,6 +50,8 @@ LogLevel VERBOSE
 AllowUsers $allow_users
 EOF
 
+  local ssh_changed=$LAST_WRITE_CHANGED
+
   if ((DRY_RUN)); then
     log_dry "sshd -t"
   elif ! sshd -t 2>/tmp/postinstall-sshd-test; then
@@ -65,26 +67,32 @@ EOF
     write_file /etc/systemd/system/ssh.socket.d/10-postinstall-port.conf 0644 <<EOF
 [Socket]
 ListenStream=
-ListenStream=${SSH_PORT:-22}
+ListenStream=${SSH_PORT:-1}
 EOF
-    run systemctl daemon-reload
-    if [[ $LAST_WRITE_CHANGED == 1 ]] || ! service_active ssh.socket; then
-      run systemctl restart ssh.socket
-      log_ok "ssh.socket listening on ${SSH_PORT:-22}"
+    local socket_changed=$LAST_WRITE_CHANGED
+    if [[ $socket_changed == 1 ]]; then
+      run systemctl daemon-reload
+    fi
+    # Restart together: an active sshd can retain the old socket on port 22.
+    if [[ $socket_changed == 1 || $ssh_changed == 1 ]] || ! service_active ssh.socket; then
+      run systemctl restart ssh.socket ssh.service
+      log_ok "ssh.socket and sshd updated on port ${SSH_PORT:-1}"
     else
-      log_skip "ssh.socket unchanged"
+      log_skip "ssh.socket and sshd unchanged"
     fi
   else
-    if [[ $LAST_WRITE_CHANGED == 1 ]] || ! service_active ssh; then
+    if [[ $ssh_changed == 1 ]] || ! service_active ssh; then
       run systemctl restart ssh
-      log_ok "sshd restarted on ${SSH_PORT:-22}"
+      log_ok "sshd restarted on ${SSH_PORT:-1}"
     else
       log_skip "sshd unchanged"
     fi
-    run systemctl enable ssh >/dev/null 2>&1 || true
+    if ! service_enabled ssh; then
+      run systemctl enable ssh
+    fi
   fi
 
-  if [[ ${SSH_PORT:-22} != 22 ]]; then
+  if [[ ${SSH_PORT:-1} != 22 ]]; then
     log_warn "port moved to ${SSH_PORT}. old sessions survive, new ones need the new port"
     log_warn "keep this shell open until you proved login works on ${SSH_PORT}"
   fi

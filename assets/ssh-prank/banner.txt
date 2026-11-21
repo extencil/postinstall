@@ -1,0 +1,10 @@
+
+  nice bot. wrong door.
+
+  $ find / -type f -name girlfriend 2>/dev/null
+  no results. still looking.
+
+  this endpoint accepts absolutely nobody.
+  no shell, no tunnel, no prize for guessing the password.
+
+  https://haltman.io/join/

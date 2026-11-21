@@ -162,3 +162,10 @@ debian_codename() {
 debian_version_id() {
   ( . /etc/os-release 2>/dev/null && printf '%s' "${VERSION_ID:-0}" )
 }
+
+# Port numbers are interpolated into nftables, sshd and systemd config.
+validate_ssh_port() {
+  if [[ ! ${SSH_PORT:-} =~ ^[1-9][0-9]{0,4}$ ]] || ((SSH_PORT > 65535)); then
+    die "SSH_PORT must be an integer between 1 and 65535, without leading zeros"
+  fi
+}
