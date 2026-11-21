@@ -9,6 +9,10 @@ secrets/
 *.log
 /tmp/
 
+# local discovery evidence; redact addresses before publishing replacements
+/chrome_QO10xwv7vw.png
+/chrome_sXaWQ1kRaC.png
+
 # editor noise
 .DS_Store
 *.swp

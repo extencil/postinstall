@@ -185,6 +185,22 @@ care about to see what happens.
   auth" is useful. "install packages" is not.
 - keep existing comments unless the behavior changed.
 
+## git workflow
+
+- complete relevant changes with commits and a push to the tracked remote.
+  this is standing authorization; do not leave finished work local-only.
+- use Conventional Commits: `type(scope): imperative summary`. add `!` and a
+  `BREAKING CHANGE:` footer when defaults or behavior require migration.
+- keep commits focused. explain the reason, resulting behavior, migration
+  steps and validation in the body when relevant. write messages in English.
+- update the todo, changelog, docs and audit alongside the implementation.
+  separate local checks from proof on a deployed target.
+- review the staged diff for secrets, real addresses and unrelated files.
+  never publish unredacted screenshots or a real config file.
+- check remote state before pushing. do not force-push or rewrite published
+  history. verify that the remote branch points to the pushed commit.
+- report commit links, checks and material limitations after publication.
+
 ## security rules
 
 - never weaken the lockout guard in `30-ssh.sh`. no key plus no password must

@@ -253,11 +253,19 @@ pending work and verification checks live in [TODO.md](TODO.md).
 
 issues and prs are welcome. keep it boring: apt packages over curl installers,
 idempotent over clever, one module per topic, and update the audit when you add
-a module that changes state. the shellcheck line:
+a module that changes state. use conventional commits with an imperative
+subject and explain migration steps and validation when relevant.
+
+the shellcheck line:
 
 ```bash
 shellcheck -x debian13-postinstall.sh lib/common.sh lib/modules/*.sh audit/*.sh
 ```
+
+## community
+
+join [haltman](https://haltman.io/join/) or go straight to the
+[telegram group](https://t.me/haltman_group).
 
 ## license
 

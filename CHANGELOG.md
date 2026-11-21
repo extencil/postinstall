@@ -12,6 +12,8 @@ versions follow semver for the scripts.
   service, with config, live audit checks and recovery documentation
 - verification backlog for GitHub public-key import, access safety and
   disposable-host deployment evidence
+- Haltman community links and a documented commit/push workflow using
+  conventional commits, staged publication checks and remote verification
 
 ### changed
 
