@@ -1,0 +1,4 @@
+# shellcheck config for the repo
+shell=bash
+external-sources=true
+disable=SC1090,SC1091

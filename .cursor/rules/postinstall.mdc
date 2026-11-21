@@ -1,0 +1,21 @@
+---
+description: postinstall repo contract, read AGENTS.md before editing
+globs: "**/*"
+alwaysApply: true
+---
+
+# postinstall
+
+canonical instructions: `AGENTS.md` at the repo root. read it first.
+
+minimum rules for any edit:
+
+- target is debian 13 only. bash 5, systemd, apt. no build step, no ci.
+- modules are idempotent, non-interactive, and mutate only through `run()`.
+  config writes only through `write_file` (backup + compare first).
+- new module: file, entrypoint `case`, config default, config example, README
+  row, topic doc, audit check, changelog. all of them.
+- never weaken the ssh key lockout guard or add password auth defaults.
+- never commit tokens, keys or real addresses.
+- gates: `bash -n`, `shellcheck -x`, `--list`, `--help`; full `--dry-run` only
+  on a disposable debian 13 vm.

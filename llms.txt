@@ -1,0 +1,45 @@
+# postinstall
+
+> shell scripts that turn a fresh debian 13 vps into a known-good box: user,
+> ssh, nftables, fail2ban, sysctl, updates, tools, docker, cloudflare tunnel
+> and mesh, dotfiles. idempotent, config driven, with a read-only audit.
+
+target is debian 13 (trixie) only. bash 5, systemd, apt. no package, no build
+step, no ci, no test suite.
+
+## start here
+
+- [AGENTS.md](https://github.com/extencil/postinstall/blob/main/AGENTS.md): the contract for llms and harnesses, module map, recipes, gotchas.
+- [README.md](https://github.com/extencil/postinstall/blob/main/README.md): what it does, quick start, config surface.
+- [config/postinstall.env.example](https://github.com/extencil/postinstall/blob/main/config/postinstall.env.example): every knob and its default.
+- [docs/](https://github.com/extencil/postinstall/blob/main/docs/README.md): topic index.
+- [docs/debian-13.md](https://github.com/extencil/postinstall/blob/main/docs/debian-13.md): trixie specific behavior.
+
+## layout
+
+- `debian13-postinstall.sh`: entrypoint, flags, module runner.
+- `lib/common.sh`: logging, `run`, `write_file`, package install, backups.
+- `lib/modules/*.sh`: one module per topic, sourced in fixed order.
+- `audit/debian13-audit.sh`: read-only checks, exit 1 on failure.
+- `docs/`: reasoning, failure modes, recovery.
+- `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/`: thin pointers to AGENTS.md.
+
+## invariants
+
+- flags > config file > environment > defaults.
+- idempotent, non-interactive, backups under `/var/backups/postinstall`.
+- mutations only via `run()`; managed files only via `write_file`.
+- a state-changing module needs an audit check in the same change.
+- ssh: key only, no root login, lockout guard must never be weakened.
+- no tokens or real addresses in the repo.
+
+## verify
+
+```bash
+bash -n debian13-postinstall.sh
+shellcheck -x debian13-postinstall.sh lib/common.sh lib/modules/*.sh audit/*.sh
+bash debian13-postinstall.sh --list
+bash audit/debian13-audit.sh --no-color
+```
+
+full `--dry-run` and any real run only on a disposable debian 13 host.

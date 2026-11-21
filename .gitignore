@@ -1,0 +1,17 @@
+# real config lives here, never in git
+config/postinstall.env
+
+# token files, if someone ignores the docs
+secrets/
+*.token
+
+# local output
+*.log
+/tmp/
+
+# editor noise
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
