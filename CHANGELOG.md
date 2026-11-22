@@ -7,6 +7,8 @@ versions follow semver for the scripts.
 
 ### added
 
+- `audit-fleet.sh` for a sequential fleet audit with per-host `ssh -t` and a
+  gitignored host list
 - first-VPS verification note with redacted staged-run evidence
 - `--keep-default-users` and `--keep-root-password` for a staged first-host POC
   that proves the new key-only login before disabling `debian` or locking root

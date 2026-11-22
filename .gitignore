@@ -19,6 +19,9 @@ secrets/
 /dryrun-output*.txt
 /audit-completo*.txt
 
+# fleet audit host list
+debian-hosts-pool.txt
+
 # editor noise
 .DS_Store
 *.swp

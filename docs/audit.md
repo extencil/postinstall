@@ -59,6 +59,24 @@ one-line check is enough.
 if you run it as a non-root user, nftables, `sshd -T`, jail status and some file
 checks are skipped instead of failing. full picture needs root.
 
+## fleet
+
+`audit-fleet.sh` at the repo root runs this audit on every host in
+`debian-hosts-pool.txt`, one at a time. it uses `ssh -t`, so remote sudo can
+prompt for the password. a failed host does not stop the rest.
+
+```bash
+cp debian-hosts-pool.txt.example debian-hosts-pool.txt
+chmod 600 debian-hosts-pool.txt
+$EDITOR debian-hosts-pool.txt
+
+./audit-fleet.sh
+./audit-fleet.sh 2>&1 | tee fleet-audit.log
+```
+
+the host list and output are gitignored. the script never takes a password as
+an argument and never writes one to disk.
+
 ## extending it
 
 when a module starts changing state, add the matching check here in the same pr.

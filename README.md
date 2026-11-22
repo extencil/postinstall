@@ -201,6 +201,23 @@ cloudflare units, world-facing listeners and the pending-reboot flag.
 
 details and exit codes: [docs/audit.md](docs/audit.md).
 
+### fleet audit
+
+`audit-fleet.sh` runs the same read-only audit on every host in
+`debian-hosts-pool.txt`. each host gets an `ssh -t`, so remote sudo can ask for
+the password on your terminal.
+
+```bash
+cp debian-hosts-pool.txt.example debian-hosts-pool.txt
+chmod 600 debian-hosts-pool.txt
+$EDITOR debian-hosts-pool.txt
+
+./audit-fleet.sh
+./audit-fleet.sh 2>&1 | tee fleet-audit.log
+```
+
+the host list and captured output are gitignored. never commit real addresses.
+
 ## repo layout
 
 ```text
