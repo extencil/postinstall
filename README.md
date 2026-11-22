@@ -148,6 +148,7 @@ ENABLE_CLOUDFLARED=1
 | `SSH_PRANK_BANNER_FILE` | empty | optional public UTF-8 banner for the decoy |
 | `HOSTNAME_SET` | empty | leave the provider hostname alone |
 | `TIMEZONE` | `UTC` | iana name |
+| `APT_LOCK_TIMEOUT` | `300` | seconds to wait for unattended-upgrades to release dpkg |
 | `SSH_PUBKEY_FILE` | empty | key file, relative paths resolve against the repo; falls back to `/root/.ssh/authorized_keys` |
 | `SSH_PUBKEY` | empty | inline public key, wins over the file |
 | `SSH_ALLOW_USERS` | empty | empty means only `NEW_USER`; disabled accounts are filtered out |

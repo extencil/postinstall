@@ -17,6 +17,8 @@ CHANGES=()
 LAST_WRITE_CHANGED=0
 export LAST_WRITE_CHANGED
 APT_UPDATED=0
+# unattended-upgrades can hold the dpkg lock for minutes; wait instead of dying.
+APT_LOCK_TIMEOUT=${APT_LOCK_TIMEOUT:-300}
 
 if [[ -t 1 ]] && [[ -z ${NO_COLOR:-} ]]; then
   C_RESET=$'\033[0m'
@@ -68,14 +70,29 @@ pkg_installed() {
   dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'ok installed'
 }
 
+apt_get() {
+  run env DEBIAN_FRONTEND=noninteractive apt-get \
+    -o "DPkg::Lock::Timeout=$APT_LOCK_TIMEOUT" \
+    -o Acquire::Retries=3 "$@"
+}
+
 apt_update() {
-  local force=${1:-}
+  local force=${1:-} attempt
   if [[ $force != force ]] && ((APT_UPDATED)); then
     return 0
   fi
   log_info "apt-get update"
-  run env DEBIAN_FRONTEND=noninteractive apt-get update -qq
-  APT_UPDATED=1
+  for attempt in 1 2 3; do
+    if apt_get update -qq; then
+      APT_UPDATED=1
+      return 0
+    fi
+    if ((attempt < 3)); then
+      log_warn "apt update failed, retrying in 5s (attempt $attempt/3)"
+      sleep 5
+    fi
+  done
+  die "apt-get update failed after 3 attempts"
 }
 
 # install_pkgs name [name...]: skips packages already installed.
@@ -89,7 +106,7 @@ install_pkgs() {
     return 0
   fi
   log_info "installing: ${missing[*]}"
-  run env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "${missing[@]}"
+  apt_get install -y -qq --no-install-recommends "${missing[@]}"
 }
 
 ensure_dir() {

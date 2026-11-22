@@ -32,6 +32,8 @@ versions follow semver for the scripts.
 - `cloudflared` now always ensures the official apt key and repository, installs
   the distro package, installs the host systemd service and verifies it started;
   dashboard routing changes stay hot
+- apt now waits up to `APT_LOCK_TIMEOUT` seconds for the dpkg lock and retries
+  `apt-get update` instead of failing when unattended-upgrades is running
 - the ssh lockout guard validates effective home, key material, ownership and
   modes, and requires `SSH_ALLOW_USERS` to permit `NEW_USER`
 - audit warns instead of failing when the generated password file is removed
