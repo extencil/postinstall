@@ -10,7 +10,7 @@ module_tools() {
     tmux less vim nano \
     htop btop ncdu tree rsync lsof file psmisc procps \
     ripgrep fd-find bat \
-    dnsutils mtr-tiny whois netcat-openbsd \
+    bind9-dnsutils mtr-tiny whois netcat-openbsd \
     shellcheck
 
   # debian renames these to dodge the /usr/bin/bat and fd clashes.

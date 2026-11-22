@@ -24,6 +24,8 @@ will forget by the next provider.
   - [dotfiles and secrets](secrets/dotfiles.md)
 - [audit](audit.md)
 - [new vps checklist](checklists/new-vps.md)
+- verification
+  - [first vps, 2026-11-22](verification/2026-11-22-first-vps.md)
 
 adding a distro later: new entrypoint at the root, new `lib/modules` or a
 distro prefix, new `docs/distro.md`. do not make the debian modules abstract

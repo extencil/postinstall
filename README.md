@@ -247,6 +247,7 @@ lands in the same place instead of inventing its own rules.
 | [tooling](docs/shell/tooling.md) | package list and the bat/fd renames |
 | [dotfiles and secrets](docs/secrets/dotfiles.md) | age, sops, gpg, clone order |
 | [audit](docs/audit.md) | wiring it into cron |
+| [first VPS verification](docs/verification/2026-11-22-first-vps.md) | what the staged live run proved and what it did not |
 | [new vps checklist](docs/checklists/new-vps.md) | provider day |
 | [agent notes](AGENTS.md) | working on the repo with an llm |
 

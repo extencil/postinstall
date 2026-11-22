@@ -635,7 +635,7 @@ section "packages"
 
 missing=()
 for p in git curl tmux zsh ripgrep fd-find bat jq htop btop rsync ncdu tree \
-         gnupg ca-certificates unzip zip lsof dnsutils mtr-tiny fail2ban nftables; do
+         gnupg ca-certificates unzip zip lsof bind9-dnsutils mtr-tiny fail2ban nftables; do
   dpkg -s "$p" >/dev/null 2>&1 || missing+=("$p")
 done
 if ((${#missing[@]} == 0)); then

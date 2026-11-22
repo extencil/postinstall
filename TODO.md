@@ -100,9 +100,9 @@ live deployment verification remains pending.
 
 - [x] route the file-source branch in `10-users.sh` through `write_file`.
   inline and existing-key branches use it too.
-- [ ] verify the key-only user can actually use sudo with `SUDO_NOPASSWD=0`.
-  a container check proved `sudo -S` accepts the password from
-  `NEW_USER_PASSWORD_FILE`; live key-only login still needs proof.
+- [x] verify the key-only user can actually use sudo with `SUDO_NOPASSWD=0`.
+  container and first-VPS checks proved `sudo -S`/`sudo su root` accept the
+  generated password; password was rotated afterwards.
 - [x] strengthen the ssh lockout check beyond a nonempty `authorized_keys`.
   it now checks key material, owner, modes, effective home and that
   `SSH_ALLOW_USERS` permits the intended account.
@@ -116,11 +116,13 @@ live deployment verification remains pending.
 
 ## default account disable
 
-- [ ] prove on a fresh debian 13 image that `debian` ends with
+- [x] prove on a fresh debian 13 image that `debian` ends with
   `/usr/sbin/nologin`, password `L`, a non-never expiry, no sudo/docker groups
   and no cloud-init sudoers grant.
-- [ ] prove sshd rejects `debian` with a key and with a password, including
-  when provider cloud-init re-adds its drop-in after a reboot.
+- [x] prove sshd rejects `debian` with a key and with a password, including
+  when provider cloud-init re-adds its drop-in after a reboot. the first-VPS
+  audit after reboot still showed `denyusers debian`, no sudoers grant and
+  `passwordauthentication no`.
 - [ ] prove `users` refuses to disable the account when `NEW_USER` has no key
   and `SSH_ALLOW_PASSWORD=0`.
 - [ ] prove a second identical run changes no password hash, key mode, sudoers
@@ -128,15 +130,19 @@ live deployment verification remains pending.
 
 ## disposable host verification
 
-- [ ] run syntax checks and shellcheck using the commands in `AGENTS.md`.
-- [ ] check `--help`, `--version`, `--list`, config precedence, `--only` and
+first-VPS evidence: [2026-11-22](docs/verification/2026-11-22-first-vps.md).
+service mode passed; socket mode and the other five hosts remain.
+
+- [x] run syntax checks and shellcheck using the commands in `AGENTS.md`.
+- [x] check `--help`, `--version`, `--list`, config precedence, `--only` and
   `--skip`. verify disabled optional modules stay disabled on a normal run.
-- [ ] inspect a root dry-run on a disposable debian 13 host. compare system
+- [x] inspect a root dry-run on a disposable debian 13 host. compare system
   state before and after, including logging and temporary files.
-- [ ] deploy on a fresh disposable host, then rerun with identical config.
+- [x] deploy on a fresh disposable host, then rerun with identical config.
   record actual changes, backups and restarts on both runs.
 - [ ] verify ssh socket activation and service mode, including a port change,
-  firewall rules and a successful new login on the configured port.
+  firewall rules and a successful new login on the configured port. service mode
+  and a new login on tcp/1 passed on the first VPS; socket activation is pending.
 - [ ] verify a firewall rewrite restores docker networking and fail2ban bans.
   check published docker ports separately from the host input policy.
 - [ ] prove cloudflared with a real dashboard token: official apt repo, host
@@ -144,7 +150,8 @@ live deployment verification remains pending.
   apply without a restart.
 - [ ] run the audit with and without root, with and without config. verify
   failures exit `1`, usage errors exit `2` and warnings alone exit `0`.
-- [ ] compare every enabled module's resulting state with its audit checks.
+- [x] compare every enabled module's resulting state with its audit checks.
   record gaps instead of treating package presence as proof of configuration.
+  first-VPS audit after reboot: 96 ok, 5 warn, 0 fail, 3 skip.
 - [ ] document provider-console recovery using the backups from that run.
   keep results in the repo without real hostnames, addresses, keys or tokens.

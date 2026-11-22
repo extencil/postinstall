@@ -7,6 +7,7 @@ versions follow semver for the scripts.
 
 ### added
 
+- first-VPS verification note with redacted staged-run evidence
 - `--keep-default-users` and `--keep-root-password` for a staged first-host POC
   that proves the new key-only login before disabling `debian` or locking root
 - `users` generates the sudo password on the host by default (64 hex chars,
@@ -34,6 +35,8 @@ versions follow semver for the scripts.
   dashboard routing changes stay hot
 - apt now waits up to `APT_LOCK_TIMEOUT` seconds for the dpkg lock and retries
   `apt-get update` instead of failing when unattended-upgrades is running
+- tools install `bind9-dnsutils` explicitly and the audit checks that package;
+  trixie no longer has a real `dnsutils` package
 - the ssh lockout guard validates effective home, key material, ownership and
   modes, and requires `SSH_ALLOW_USERS` to permit `NEW_USER`
 - audit warns instead of failing when the generated password file is removed

@@ -14,6 +14,11 @@ secrets/
 /chrome_QO10xwv7vw.png
 /chrome_sXaWQ1kRaC.png
 
+# local POC captures; keep unredacted output out of git
+*-output.txt
+/dryrun-output*.txt
+/audit-completo*.txt
+
 # editor noise
 .DS_Store
 *.swp

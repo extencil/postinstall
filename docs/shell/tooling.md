@@ -17,7 +17,7 @@ are already packaged and do not need a version manager.
 | `lsof`, `file`, `psmisc`, `procps` | the "what is this process" kit |
 | `ripgrep` | grep that respects .gitignore |
 | `fd-find`, `bat` | find and cat, with colors |
-| `dnsutils`, `mtr-tiny`, `whois`, `netcat-openbsd` | network triage |
+| `bind9-dnsutils`, `mtr-tiny`, `whois`, `netcat-openbsd` | network triage |
 | `shellcheck` | linting these scripts on the box itself |
 
 ## the debian renames
