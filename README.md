@@ -48,11 +48,14 @@ anything is apt.
 then prove you can log in as the new user on the new port before you close the
 root shell. use the provider console if you enjoy not being locked out.
 
-put a chosen sudo password in `NEW_USER_PASSWORD_FILE` (mode `0400`/`0600`,
-gitignored). SSH stays public-key only; the password is only for local privilege
-elevation. if the file is missing, the script generates one and stores it
-root-only at `/root/postinstall-<user>.password`, readable from the provider
-console.
+the postinstall generates a fresh 64-character password on the host and stores
+it root-only at `/root/postinstall-<user>.password`. read it from the open root
+session or the provider console, then change it with `passwd` if you want a
+different one. SSH stays public-key only; the password is only for local
+privilege elevation. reruns do not rotate an existing password.
+
+`NEW_USER_PASSWORD` and `NEW_USER_PASSWORD_FILE` exist for an explicit opt-in.
+leave both empty unless you really need a pre-set value.
 
 ## what runs, in order
 
@@ -110,16 +113,16 @@ sudo bash debian13-postinstall.sh --audit
 anything you can write in bash works, including `$(cat token)`. two things to
 know:
 
-- it holds tunnel tokens and, if you set one, a bootstrap password. keep it
-  out of git, keep it `0600`, and prefer token files over inlining the token.
+- it holds tunnel tokens. keep it out of git, keep it `0600`, and prefer token
+  files over inlining the token.
 - precedence is flags > config file > environment > defaults.
 
 the parts people touch:
 
 ```bash
 NEW_USER=ops
-NEW_USER_PASSWORD=""                 # inline fallback; prefer the file below
-NEW_USER_PASSWORD_FILE=config/postinstall.password  # 0400/0600, gitignored
+NEW_USER_PASSWORD=""                 # leave empty to generate on the host
+NEW_USER_PASSWORD_FILE=""            # optional 0400/0600 file; empty = generate
 DISABLE_DEFAULT_USERS=debian         # lock, expire, nologin, deny ssh
 SSH_PORT=1
 TIMEZONE=UTC
@@ -137,8 +140,8 @@ ENABLE_CLOUDFLARED=1
 | key | default | what |
 | --- | --- | --- |
 | `NEW_USER` | `ops` | the human account |
-| `NEW_USER_PASSWORD` | empty | inline bootstrap password; prefer the file |
-| `NEW_USER_PASSWORD_FILE` | empty | chosen sudo password file, `0400`/`0600`; generated if missing |
+| `NEW_USER_PASSWORD` | empty | optional inline bootstrap password; leave empty to generate |
+| `NEW_USER_PASSWORD_FILE` | empty | optional chosen password file, `0400`/`0600`; empty generates root-only |
 | `DISABLE_DEFAULT_USERS` | `debian` | provider accounts to lock, expire, nologin and deny over ssh |
 | `LOCK_ROOT_PASSWORD` | `1` | lock root after sudo works; `0` only for a staged POC |
 | `SSH_PORT` | `1` | real ssh port, firewall follows; decoy uses `22` |

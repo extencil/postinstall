@@ -9,8 +9,9 @@ provider day. ten minutes, no thinking required.
       the provider injected one into `/root/.ssh/authorized_keys`)
 - [ ] pick the new user name and ssh port in the config (`1/tcp` by default)
 - [ ] leave `DISABLE_DEFAULT_USERS=debian` so the provider account is neutered
-- [ ] choose the sudo password in `NEW_USER_PASSWORD_FILE` (`0400`/`0600`,
-      gitignored). SSH stays public-key only; `SUDO_NOPASSWD=0` keeps the prompt.
+- [ ] leave `NEW_USER_PASSWORD` and `NEW_USER_PASSWORD_FILE` empty. the host
+      generates a root-only password; read it from the root session, then
+      change it with `passwd` if you want. SSH stays public-key only.
 - [ ] allow real ssh at the provider firewall
 - [ ] decide cloudflare: named tunnel or none
 - [ ] put tokens in `/root/.secrets/*.token` with `chmod 600`

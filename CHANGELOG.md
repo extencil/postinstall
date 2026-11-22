@@ -9,9 +9,9 @@ versions follow semver for the scripts.
 
 - `--keep-default-users` and `--keep-root-password` for a staged first-host POC
   that proves the new key-only login before disabling `debian` or locking root
-- `users` reads a chosen sudo password from `NEW_USER_PASSWORD_FILE`
-  (`0400`/`0600`), falls back to `NEW_USER_PASSWORD`, and only generates a
-  64-character password when neither exists; SSH stays public-key only
+- `users` generates the sudo password on the host by default (64 hex chars,
+  root-only) and optionally accepts `NEW_USER_PASSWORD_FILE` or
+  `NEW_USER_PASSWORD`; SSH stays public-key only
 - `DISABLE_DEFAULT_USERS=debian` disables the provider account with a nologin
   shell, locked password, expiry, group removal, sudoers scrub and sshd
   `DenyUsers`, only after `NEW_USER` has a usable key

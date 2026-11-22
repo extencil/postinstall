@@ -54,21 +54,21 @@ public-key only: `SSH_ALLOW_PASSWORD=0`, `PasswordAuthentication no` and
 `AuthenticationMethods publickey`. the local password is never accepted by
 sshd.
 
-the recommended path is a chosen password in `NEW_USER_PASSWORD_FILE`, mode
-`0400` or `0600`. relative paths resolve against the repo and the file is
-gitignored. set `SUDO_NOPASSWD=0` and `sudo` asks for that password. an inline
-`NEW_USER_PASSWORD` in the config also works, but puts the secret in the config
-file instead of its own file.
+the default is a password generated on the host at deploy time. the module
+creates a 64-character hex password with `openssl rand -hex 32` and stores it at
+`/root/postinstall-<user>.password`, mode `0600`. it is never printed and is
+removed from the exported environment before apt or curl sees it. read it from
+the open root session or the provider console, then rotate with
+`passwd NEW_USER` if you want a different one. reruns do not rotate a password
+that is already set; remove or update the generated file after rotating.
 
-if the file is missing, the module generates a 64-character hex password with
-`openssl rand -hex 32` and stores it there, or at
-`/root/postinstall-<user>.password` when the path is empty. it is never printed
-and is removed from the exported environment before apt or curl sees it. a
-root-only generated file has to be read from the provider console before the
-first `sudo`.
+`SUDO_NOPASSWD=0` keeps the sudo prompt. `SUDO_NOPASSWD=1` is optional and only
+skips that prompt; neither setting adds a password path to SSH.
 
-`SUDO_NOPASSWD=1` is optional. it skips the sudo prompt only; it does not add a
-password path to SSH.
+an explicit `NEW_USER_PASSWORD` or `NEW_USER_PASSWORD_FILE` is possible but
+opt-in. leave both empty for the generated flow. a chosen file must be mode
+`0400` or `0600`; relative paths resolve against the repo and the file is
+gitignored.
 
 `DISABLE_DEFAULT_USERS` defaults to `debian`. the module refuses to touch the
 old account until `NEW_USER` has a usable key, or until you explicitly set

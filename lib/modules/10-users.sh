@@ -49,8 +49,8 @@ module_users() {
       write_file "$password_file" 0600 <<<"$password"
       log_ok "generated password stored in $password_file (0600)"
       if [[ ${SUDO_NOPASSWD:-0} != 1 ]]; then
-        log_warn "sudo needs this generated password; read it as root from the provider console"
-        log_warn "or put your chosen password in NEW_USER_PASSWORD_FILE before the first run"
+        log_warn "sudo needs this generated password; read it from the root session or provider console"
+        log_warn "rotate it later with: passwd $NEW_USER"
       fi
     fi
     run chpasswd <<<"$NEW_USER:$password"
