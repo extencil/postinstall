@@ -1,5 +1,6 @@
 # real config lives here, never in git
 config/postinstall.env
+config/*.password
 
 # token files, if someone ignores the docs
 secrets/

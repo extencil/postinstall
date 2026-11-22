@@ -48,9 +48,11 @@ anything is apt.
 then prove you can log in as the new user on the new port before you close the
 root shell. use the provider console if you enjoy not being locked out.
 
-the generated password is never printed. it lands in
-`/root/postinstall-<user>.password` (mode `0600`). with `SUDO_NOPASSWD=0`, read
-it as root from the provider console before you rely on password-based sudo.
+put a chosen sudo password in `NEW_USER_PASSWORD_FILE` (mode `0400`/`0600`,
+gitignored). SSH stays public-key only; the password is only for local privilege
+elevation. if the file is missing, the script generates one and stores it
+root-only at `/root/postinstall-<user>.password`, readable from the provider
+console.
 
 ## what runs, in order
 
@@ -73,7 +75,7 @@ a token in the config.
 | module | what it actually does |
 | --- | --- |
 | `preflight` | debian check, apt index, timezone, timesyncd, hostname |
-| `users` | creates `NEW_USER`, generated password, sudo, ssh key, locks root, disables `debian` |
+| `users` | creates `NEW_USER`, sudo password, ssh key, locks root, disables `debian` |
 | `firewall` | nftables, input drop, only ssh + your extra ports |
 | `ssh` | key only, no root, real ssh on tcp/1, socket aware |
 | `ssh_prank` | reject-only decoy on tcp/22, bounded connections, separate service |
@@ -115,8 +117,8 @@ the parts people touch:
 
 ```bash
 NEW_USER=ops
-NEW_USER_PASSWORD=""                 # empty = generate 64 hex chars on first run
-NEW_USER_PASSWORD_FILE=""            # empty = /root/postinstall-<user>.password
+NEW_USER_PASSWORD=""                 # inline fallback; prefer the file below
+NEW_USER_PASSWORD_FILE=config/postinstall.password  # 0400/0600, gitignored
 DISABLE_DEFAULT_USERS=debian         # lock, expire, nologin, deny ssh
 SSH_PORT=1
 TIMEZONE=UTC
@@ -134,8 +136,8 @@ ENABLE_CLOUDFLARED=1
 | key | default | what |
 | --- | --- | --- |
 | `NEW_USER` | `ops` | the human account |
-| `NEW_USER_PASSWORD` | empty | explicit bootstrap password; empty generates 64 hex chars |
-| `NEW_USER_PASSWORD_FILE` | empty | generated password path, default `/root/postinstall-<user>.password` |
+| `NEW_USER_PASSWORD` | empty | inline bootstrap password; prefer the file |
+| `NEW_USER_PASSWORD_FILE` | empty | chosen sudo password file, `0400`/`0600`; generated if missing |
 | `DISABLE_DEFAULT_USERS` | `debian` | provider accounts to lock, expire, nologin and deny over ssh |
 | `SSH_PORT` | `1` | real ssh port, firewall follows; decoy uses `22` |
 | `SSH_PRANK_BANNER_FILE` | empty | optional public UTF-8 banner for the decoy |
@@ -148,7 +150,7 @@ ENABLE_CLOUDFLARED=1
 | `SSH_ALLOW_TCP_FORWARDING` | `1` | keep `-L`/`-R` working |
 | `EXTRA_TCP_PORTS` | empty | inbound tcp, space or comma separated |
 | `EXTRA_UDP_PORTS` | empty | inbound udp |
-| `SUDO_NOPASSWD` | `0` | passwordless sudo for `NEW_USER` |
+| `SUDO_NOPASSWD` | `0` | `0` asks for the local password; never affects SSH auth |
 | `DOCKER_ADD_USER_TO_GROUP` | `1` | root-equivalent, read the docker doc |
 | `PYTHON_INSTALL_UV` | `1` | uv into `/usr/local/bin` |
 | `NODE_MAJOR` | `24` | nodesource major |

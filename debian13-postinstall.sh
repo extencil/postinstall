@@ -319,7 +319,9 @@ if [[ $SSH_PORT != 22 ]]; then
   log_info "test:    ssh -p $SSH_PORT $NEW_USER@<host>   # keep this shell open"
 fi
 if module_enabled users && [[ -z ${NEW_USER_PASSWORD:-} ]]; then
-  log_info "password: ${NEW_USER_PASSWORD_FILE:-/root/postinstall-$NEW_USER.password} (0600, root only)"
+  pwfile=${NEW_USER_PASSWORD_FILE:-/root/postinstall-$NEW_USER.password}
+  [[ $pwfile == /* ]] || pwfile=$SCRIPT_DIR/$pwfile
+  log_info "password: $pwfile (0400/0600)"
 fi
 log_info "backups: $BACKUP_ROOT"
 printf '\n'

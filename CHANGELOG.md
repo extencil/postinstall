@@ -7,8 +7,9 @@ versions follow semver for the scripts.
 
 ### added
 
-- `users` generates a 64-character password when `NEW_USER_PASSWORD` is empty,
-  stores it root-only, reuses it on reruns and refuses to export it to children
+- `users` reads a chosen sudo password from `NEW_USER_PASSWORD_FILE`
+  (`0400`/`0600`), falls back to `NEW_USER_PASSWORD`, and only generates a
+  64-character password when neither exists; SSH stays public-key only
 - `DISABLE_DEFAULT_USERS=debian` disables the provider account with a nologin
   shell, locked password, expiry, group removal, sudoers scrub and sshd
   `DenyUsers`, only after `NEW_USER` has a usable key

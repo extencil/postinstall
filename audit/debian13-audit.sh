@@ -218,25 +218,26 @@ if id -u "$NEW_USER" >/dev/null 2>&1; then
       bad "$NEW_USER has no usable password and SUDO_NOPASSWD=0, sudo and console login fail"
     fi
     pwfile=${NEW_USER_PASSWORD_FILE:-/root/postinstall-$NEW_USER.password}
+    [[ $pwfile == /* ]] || pwfile=$ROOT_DIR/$pwfile
     if [[ -n ${NEW_USER_PASSWORD:-} ]]; then
       skip "password supplied in config, no generated file expected"
     elif [[ -f $pwfile ]]; then
       pwperms=$(stat -c '%a' "$pwfile")
-      if [[ $pwperms == 600 ]]; then
-        ok "generated password file mode 600"
+      if [[ $pwperms == 400 || $pwperms == 600 ]]; then
+        ok "password file mode $pwperms"
       else
-        bad "generated password file mode $pwperms, wanted 600"
+        bad "password file mode $pwperms, wanted 0400 or 0600"
       fi
       pwowner=$(stat -c '%U:%G' "$pwfile")
-      if [[ $pwowner == root:root ]]; then
-        ok "generated password file owned by root"
+      if [[ $pwowner == root:root || $pwowner == "$NEW_USER:$NEW_USER" ]]; then
+        ok "password file owned by $pwowner"
       else
-        bad "generated password file owned by $pwowner, wanted root:root"
+        bad "password file owned by $pwowner, wanted root or $NEW_USER"
       fi
     elif [[ ${SUDO_NOPASSWD:-0} == 1 ]]; then
-      warn "no generated password file at $pwfile (passwordless sudo still works)"
+      warn "no password file at $pwfile (passwordless sudo still works)"
     else
-      bad "no generated password file at $pwfile"
+      bad "no password file at $pwfile"
     fi
   else
     skip "password state needs root"

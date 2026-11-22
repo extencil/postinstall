@@ -49,21 +49,31 @@ account database, key material, `.ssh` mode `0700`, owner, and `0600` on
 
 ## the bootstrap account and the old one
 
-`NEW_USER` gets a generated 64-character hex password when it is created.
-`NEW_USER_PASSWORD` in the config wins; otherwise a password file from an
-earlier run is reused and a missing one is generated with
-`openssl rand -hex 32`. the password is never printed and is removed from the
-exported environment before apt or curl sees it. it lands in
-`/root/postinstall-<user>.password`, mode `0600`.
+`NEW_USER` needs a local password for `sudo`, not for SSH. SSH remains
+public-key only: `SSH_ALLOW_PASSWORD=0`, `PasswordAuthentication no` and
+`AuthenticationMethods publickey`. the local password is never accepted by
+sshd.
 
-with `SUDO_NOPASSWD=0` that password is what `sudo` asks for. key-only login
-cannot read a root-only file, so either read it as root from the provider
-console before closing the bootstrap shell, or use `SUDO_NOPASSWD=1` for the
-bootstrap account. the audit tells you when neither path is usable.
+the recommended path is a chosen password in `NEW_USER_PASSWORD_FILE`, mode
+`0400` or `0600`. relative paths resolve against the repo and the file is
+gitignored. set `SUDO_NOPASSWD=0` and `sudo` asks for that password. an inline
+`NEW_USER_PASSWORD` in the config also works, but puts the secret in the config
+file instead of its own file.
+
+if the file is missing, the module generates a 64-character hex password with
+`openssl rand -hex 32` and stores it there, or at
+`/root/postinstall-<user>.password` when the path is empty. it is never printed
+and is removed from the exported environment before apt or curl sees it. a
+root-only generated file has to be read from the provider console before the
+first `sudo`.
+
+`SUDO_NOPASSWD=1` is optional. it skips the sudo prompt only; it does not add a
+password path to SSH.
 
 `DISABLE_DEFAULT_USERS` defaults to `debian`. the module refuses to touch the
-old account until `NEW_USER` has a usable key, or until `SSH_ALLOW_PASSWORD=1`
-makes the generated password a real way in. then, per account:
+old account until `NEW_USER` has a usable key, or until you explicitly set
+`SSH_ALLOW_PASSWORD=1` (not recommended) to make a password a way in. then, per
+account:
 
 - remove sudo and docker membership
 - shell to `/usr/sbin/nologin`

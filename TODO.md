@@ -101,8 +101,8 @@ live deployment verification remains pending.
 - [x] route the file-source branch in `10-users.sh` through `write_file`.
   inline and existing-key branches use it too.
 - [ ] verify the key-only user can actually use sudo with `SUDO_NOPASSWD=0`.
-  the generated password is stored root-only and a container check proved
-  `sudo -S` accepts it; live key-only login still needs proof.
+  a container check proved `sudo -S` accepts the password from
+  `NEW_USER_PASSWORD_FILE`; live key-only login still needs proof.
 - [x] strengthen the ssh lockout check beyond a nonempty `authorized_keys`.
   it now checks key material, owner, modes, effective home and that
   `SSH_ALLOW_USERS` permits the intended account.

@@ -14,13 +14,20 @@ module_users() {
     log_ok "created $NEW_USER"
   fi
 
-  # A key-only login has no usable password, so sudo would be a dead end.
-  # Generate one huge password and keep it root-only. An explicit
-  # NEW_USER_PASSWORD in the config wins; a file from an earlier run is reused
-  # so reruns never rotate the password behind your back.
+  # A key-only login needs a local password for sudo. An explicit
+  # NEW_USER_PASSWORD wins; otherwise NEW_USER_PASSWORD_FILE is read when it
+  # exists, and only a missing file is generated. The file is the recommended
+  # path: it keeps SSH key-only and still gives the human a sudo credential.
   local password_status password_file password generated=0
   password_status=$(passwd -S "$NEW_USER" 2>/dev/null | awk '{print $2}' || true)
   password_file=${NEW_USER_PASSWORD_FILE:-/root/postinstall-$NEW_USER.password}
+  [[ $password_file == /* ]] || password_file=$ROOT_DIR/$password_file
+  if [[ -z ${NEW_USER_PASSWORD:-} && -s $password_file ]]; then
+    case $(stat -c '%a' "$password_file") in
+      400 | 600) ;;
+      *) die "NEW_USER_PASSWORD_FILE must be mode 0400 or 0600: $password_file" ;;
+    esac
+  fi
   if [[ $password_status == P ]]; then
     log_skip "$NEW_USER already has a password"
   else
@@ -29,7 +36,7 @@ module_users() {
       log_info "using NEW_USER_PASSWORD from config"
     elif [[ -s $password_file ]]; then
       password=$(<"$password_file")
-      log_info "reusing password from $password_file"
+      log_info "using chosen password from $password_file"
     else
       password=$(openssl rand -hex 32 2>/dev/null || printf 'dry-run-password')
       ((DRY_RUN)) || [[ $password != dry-run-password ]] || die "openssl failed to generate a password"
@@ -41,21 +48,14 @@ module_users() {
       ensure_dir "$(dirname "$password_file")" 0700
       write_file "$password_file" 0600 <<<"$password"
       log_ok "generated password stored in $password_file (0600)"
+      if [[ ${SUDO_NOPASSWD:-0} != 1 ]]; then
+        log_warn "sudo needs this generated password; read it as root from the provider console"
+        log_warn "or put your chosen password in NEW_USER_PASSWORD_FILE before the first run"
+      fi
     fi
     run chpasswd <<<"$NEW_USER:$password"
     log_ok "set password for $NEW_USER"
     unset password
-  fi
-
-  if [[ -f $password_file ]]; then
-    if [[ $(stat -c '%a' "$password_file") != 600 ]]; then
-      run chmod 0600 "$password_file"
-      log_ok "$password_file -> 0600"
-    fi
-    if [[ $(stat -c '%U:%G' "$password_file") != root:root ]]; then
-      run chown root:root "$password_file"
-      log_ok "$password_file -> root:root"
-    fi
   fi
 
   if id -nG "$NEW_USER" 2>/dev/null | tr ' ' '\n' | grep -qx sudo; then
@@ -156,7 +156,7 @@ EOF
   fi
 
   if [[ ${SUDO_NOPASSWD:-0} != 1 && -z ${NEW_USER_PASSWORD:-} ]]; then
-    log_info "sudo keeps the password prompt; generated password is in $password_file (0600, root)"
+    log_info "sudo asks for the password in $password_file"
   fi
 
   # root stays usable through sudo, not through a password over ssh.
