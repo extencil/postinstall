@@ -41,6 +41,8 @@ versions follow semver for the scripts.
 - inline `SSH_PUBKEY` wins over `SSH_PUBKEY_FILE`; an explicitly selected
   source that is missing or malformed aborts instead of falling back
 - real ssh defaults to tcp/1 across deployment, fail2ban, audit and docs;
+  the ssh module now treats an active `ssh.socket` as socket mode even when the
+  unit is not enabled;
   existing config values still win, and invalid port numbers abort before changes
 - nftables port sets use comma-separated elements when multiple ports are set
 - ssh socket and service restart together when configuration changes, and the

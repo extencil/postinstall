@@ -106,7 +106,7 @@ EOF
 
   # debian 13 ships ssh.socket enabled. the port lives in the socket unit,
   # so override ListenStream instead of fighting it.
-  if service_enabled ssh.socket; then
+  if service_enabled ssh.socket || service_active ssh.socket; then
     write_file /etc/systemd/system/ssh.socket.d/10-postinstall-port.conf 0644 <<EOF
 [Socket]
 ListenStream=
