@@ -238,7 +238,7 @@ if id -u "$NEW_USER" >/dev/null 2>&1; then
     elif [[ ${SUDO_NOPASSWD:-0} == 1 ]]; then
       warn "no password file at $pwfile (passwordless sudo still works)"
     else
-      bad "no password file at $pwfile"
+      warn "no password file at $pwfile; password may have been rotated manually"
     fi
   else
     skip "password state needs root"

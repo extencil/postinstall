@@ -34,6 +34,8 @@ versions follow semver for the scripts.
   dashboard routing changes stay hot
 - the ssh lockout guard validates effective home, key material, ownership and
   modes, and requires `SSH_ALLOW_USERS` to permit `NEW_USER`
+- audit warns instead of failing when the generated password file is removed
+  after a manual `passwd` rotation
 - `SSH_PUBKEY_FILE` honours relative paths, never silently loses to the root
   fallback, and `authorized_keys` writes go through `write_file`
 - inline `SSH_PUBKEY` wins over `SSH_PUBKEY_FILE`; an explicitly selected
