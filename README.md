@@ -4,7 +4,7 @@ scripts that turn a fresh vps into a box i don't have to think about again.
 
 ![debian 13](https://img.shields.io/badge/debian-13%20trixie-A81D33?style=flat-square&logo=debian&logoColor=white)
 ![bash](https://img.shields.io/badge/bash-5.x-4EAA25?style=flat-square&logo=gnubash&logoColor=white)
-![cloudflare](https://img.shields.io/badge/cloudflare-tunnel%20%2B%20mesh-F38020?style=flat-square&logo=cloudflare&logoColor=white)
+![cloudflare](https://img.shields.io/badge/cloudflare-tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white)
 ![license](https://img.shields.io/badge/license-Unlicense-lightgrey?style=flat-square)
 
 every provider hands you a root shell, a password in an email and a vague feeling
@@ -67,8 +67,8 @@ flowchart LR
     python --> cloudflare --> dotfiles --> audit
 ```
 
-`node`, `go`, `warp` and `dotfiles` are off by default. cloudflared too, until
-you put a token in the config.
+`node`, `go` and `dotfiles` are off by default. cloudflared too, until you put
+a token in the config.
 
 | module | what it actually does |
 | --- | --- |
@@ -86,8 +86,7 @@ you put a token in the config.
 | `python` | venv, pipx, uv |
 | `node` | nodesource apt repo, pinned major (optional) |
 | `go` | distro golang (optional) |
-| `cloudflared` | named tunnel, outbound only (optional) |
-| `warp` | cloudflare mesh connector (optional) |
+| `cloudflared` | dashboard tunnel, official apt repo, systemd host service (optional) |
 | `dotfiles` | clones the repo that makes the box mine (optional) |
 | `verify` | runs the audit at the end, never fails the run |
 
@@ -124,11 +123,9 @@ TIMEZONE=UTC
 SSH_PUBKEY_FILE=/root/.ssh/authorized_keys
 
 CLOUDFLARED_TOKEN_FILE=/root/.secrets/cf-tunnel.token
-CLOUDFLARE_WARP_TOKEN_FILE=/root/.secrets/cf-warp.token
 
 ENABLE_DOCKER=1
 ENABLE_CLOUDFLARED=1
-ENABLE_WARP=0
 ```
 
 <details>
@@ -155,9 +152,8 @@ ENABLE_WARP=0
 | `DOCKER_ADD_USER_TO_GROUP` | `1` | root-equivalent, read the docker doc |
 | `PYTHON_INSTALL_UV` | `1` | uv into `/usr/local/bin` |
 | `NODE_MAJOR` | `24` | nodesource major |
-| `CLOUDFLARED_TOKEN_FILE` | empty | tunnel token, `0600` |
-| `CLOUDFLARE_WARP_TOKEN_FILE` | empty | mesh connector token, `0600` |
-| `WARP_CODENAME` | `bookworm` | until upstream ships trixie |
+| `CLOUDFLARED_TOKEN_FILE` | empty | tunnel token file, `0400`/`0600` |
+| `CLOUDFLARED_TOKEN` | empty | inline fallback, visible in `ps`; avoid |
 | `DOTFILES_REPO` | empty | git url, cloned as `NEW_USER` |
 | `DOTFILES_DIR` | empty | defaults to `~/.dotfiles` |
 | `DOTFILES_INSTALL_CMD` | empty | run inside the clone, as the user |
@@ -213,7 +209,7 @@ details and exit codes: [docs/audit.md](docs/audit.md).
 └── docs/
     ├── debian-13.md              # trixie specific gotchas
     ├── hardening/                # ssh, firewall, fail2ban, sysctl, updates
-    ├── network/cloudflare.md     # tunnel and mesh, the outbound way
+    ├── network/cloudflare.md     # dashboard tunnel, host service
     ├── runtimes/                 # docker, python, node, go
     ├── shell/tooling.md
     ├── secrets/dotfiles.md
@@ -236,7 +232,7 @@ lands in the same place instead of inventing its own rules.
 | [fail2ban](docs/hardening/fail2ban.md) | checking or lifting a ban |
 | [sysctl](docs/hardening/sysctl.md) | wondering what a knob does and why it is not here |
 | [updates](docs/hardening/updates.md) | controlling the 6am upgrade window |
-| [cloudflare](docs/network/cloudflare.md) | tunnel vs mesh, tokens, zero inbound |
+| [cloudflare](docs/network/cloudflare.md) | dashboard tunnel, apt repo, host service, zero inbound |
 | [docker](docs/runtimes/docker.md) | daemon.json choices and the group warning |
 | [python](docs/runtimes/python.md) | uv, pipx, venvs |
 | [node and go](docs/runtimes/node-go.md) | version pins, why optional |

@@ -39,7 +39,7 @@ exit codes:
 | packages | the base toolset |
 | runtimes | python, venv, pipx, uv; node and go when enabled |
 | docker | service, `daemon.json` parses, the three daemon opinions, container count |
-| cloudflare | `cloudflared` version and unit, warp status |
+| cloudflare | `cloudflared` version, active and enabled host unit |
 | listeners | world-facing tcp listeners, expected ssh port, count |
 | dotfiles | clone present when `DOTFILES_REPO` is set |
 

@@ -26,6 +26,9 @@ versions follow semver for the scripts.
 
 ### changed
 
+- `cloudflared` now always ensures the official apt key and repository, installs
+  the distro package, installs the host systemd service and verifies it started;
+  dashboard routing changes stay hot
 - the ssh lockout guard validates effective home, key material, ownership and
   modes, and requires `SSH_ALLOW_USERS` to permit `NEW_USER`
 - `SSH_PUBKEY_FILE` honours relative paths, never silently loses to the root
@@ -37,6 +40,11 @@ versions follow semver for the scripts.
 - nftables port sets use comma-separated elements when multiple ports are set
 - ssh socket and service restart together when configuration changes, and the
   audit detects additional effective sshd ports
+
+### removed
+
+- the `warp` module, `ENABLE_WARP`, its tokens and `WARP_CODENAME` are gone.
+  cloudflared tunnels with dashboard-managed routing remain the supported path.
 
 ## [0.1.0] - 2026-11-21
 

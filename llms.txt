@@ -1,8 +1,8 @@
 # postinstall
 
 > shell scripts that turn a fresh debian 13 vps into a known-good box: user,
-> ssh, nftables, fail2ban, sysctl, updates, tools, docker, cloudflare tunnel
-> and mesh, dotfiles. idempotent, config driven, with a read-only audit.
+> ssh, nftables, fail2ban, sysctl, updates, tools, docker, cloudflare tunnel,
+> dotfiles. idempotent, config driven, with a read-only audit.
 
 target is debian 13 (trixie) only. bash 5, systemd, apt; the ssh decoy uses
 system python and Debian's python3-paramiko. no build step or ci. isolated

@@ -12,7 +12,7 @@ provider day. ten minutes, no thinking required.
 - [ ] decide what `sudo` should ask: read the generated password as root, or
       set `SUDO_NOPASSWD=1` for the bootstrap account
 - [ ] allow real ssh at the provider firewall
-- [ ] decide cloudflare: named tunnel, mesh connector, both, none
+- [ ] decide cloudflare: named tunnel or none
 - [ ] put tokens in `/root/.secrets/*.token` with `chmod 600`
 - [ ] `config/postinstall.env` exists, `chmod 600`, not in git
 

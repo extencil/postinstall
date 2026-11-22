@@ -49,7 +49,6 @@ VERSION="0.1.0"
 : "${ENABLE_NODE:=0}"
 : "${ENABLE_GO:=0}"
 : "${ENABLE_CLOUDFLARED:=0}"
-: "${ENABLE_WARP:=0}"
 : "${ENABLE_DOTFILES:=0}"
 : "${ENABLE_VERIFY:=1}"
 
@@ -58,9 +57,6 @@ VERSION="0.1.0"
 : "${NODE_MAJOR:=24}"
 : "${CLOUDFLARED_TOKEN_FILE:=}"
 : "${CLOUDFLARED_TOKEN:=}"
-: "${CLOUDFLARE_WARP_TOKEN_FILE:=}"
-: "${CLOUDFLARE_WARP_TOKEN:=}"
-: "${WARP_CODENAME:=bookworm}"
 : "${DOTFILES_REPO:=}"
 : "${DOTFILES_DIR:=}"
 : "${DOTFILES_INSTALL_CMD:=}"
@@ -73,7 +69,7 @@ CONFIG_FILE=""
 DEBIAN_CODENAME=$(debian_codename)
 
 MODULES=(preflight users firewall ssh ssh_prank fail2ban sysctl updates tools shell
-         docker python node go cloudflared warp dotfiles verify)
+         docker python node go cloudflared dotfiles verify)
 
 # ------------------------------ usage -------------------------------
 
@@ -141,6 +137,10 @@ if [[ -n $CONFIG_FILE ]]; then
   # Do not leak a bootstrap password into apt, curl or any other child.
   if [[ -n ${NEW_USER_PASSWORD:-} ]]; then
     export -n NEW_USER_PASSWORD
+  fi
+  # Same for the inline tunnel token fallback. Prefer the 0600 file.
+  if [[ -n ${CLOUDFLARED_TOKEN:-} ]]; then
+    export -n CLOUDFLARED_TOKEN
   fi
 fi
 
@@ -294,7 +294,6 @@ for id in "${MODULES[@]}"; do
     node) mod_file="$SCRIPT_DIR/lib/modules/82-node.sh" ;;
     go) mod_file="$SCRIPT_DIR/lib/modules/83-go.sh" ;;
     cloudflared) mod_file="$SCRIPT_DIR/lib/modules/90-cloudflared.sh" ;;
-    warp) mod_file="$SCRIPT_DIR/lib/modules/91-warp.sh" ;;
     dotfiles) mod_file="$SCRIPT_DIR/lib/modules/95-dotfiles.sh" ;;
     verify) mod_file="$SCRIPT_DIR/lib/modules/99-verify.sh" ;;
   esac

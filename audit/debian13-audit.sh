@@ -17,6 +17,7 @@ NEW_USER_PASSWORD=""
 NEW_USER_PASSWORD_FILE=""
 DISABLE_DEFAULT_USERS=debian
 SSH_PORT=1
+ENABLE_CLOUDFLARED=0
 ENABLE_SSH_PRANK=1
 EXTRA_TCP_PORTS=""
 SUDO_NOPASSWD=0
@@ -728,26 +729,46 @@ fi
 
 section "cloudflare"
 
-if has cloudflared; then
+if [[ ${ENABLE_CLOUDFLARED:-0} != 1 ]]; then
+  skip "cloudflared disabled in config"
+  if has cloudflared && unit_active cloudflared; then
+    warn "cloudflared still running; disabling a module does not stop its service"
+  fi
+elif ! has cloudflared; then
+  bad "cloudflared enabled but the binary is not installed"
+else
   ok "cloudflared $(cloudflared --version 2>/dev/null | awk '{print $3}')"
   if unit_active cloudflared; then
     ok "cloudflared.service active"
   else
-    warn "cloudflared installed but tunnel service inactive"
+    bad "cloudflared installed but tunnel service inactive"
   fi
-else
-  skip "cloudflared not installed"
-fi
-
-if has warp-cli; then
-  status=$(warp-cli --accept-tos status 2>/dev/null | head -1)
-  if grep -qi connected <<<"$status"; then
-    ok "warp: $status"
+  if unit_enabled cloudflared; then
+    ok "cloudflared.service enabled"
   else
-    warn "warp: ${status:-no status}"
+    warn "cloudflared.service not enabled"
   fi
-else
-  skip "warp-cli not installed"
+  if [[ -f /etc/systemd/system/cloudflared.service ]]; then
+    ok "cloudflared host service unit present"
+  else
+    warn "cloudflared unit is not the postinstall host-service path"
+  fi
+  if [[ -f /etc/cloudflared/token ]]; then
+    token_perms=$(stat -c '%a' /etc/cloudflared/token)
+    if [[ $token_perms == 600 ]]; then
+      ok "cloudflared token file mode 600"
+    else
+      bad "cloudflared token file mode $token_perms, wanted 600"
+    fi
+    token_owner=$(stat -c '%U:%G' /etc/cloudflared/token)
+    if [[ $token_owner == root:root ]]; then
+      ok "cloudflared token file owned by root"
+    else
+      bad "cloudflared token file owned by $token_owner, wanted root:root"
+    fi
+  else
+    warn "no /etc/cloudflared/token, token may live in another service config"
+  fi
 fi
 
 # ----------------------------- listeners ----------------------------

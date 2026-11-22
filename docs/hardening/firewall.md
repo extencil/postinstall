@@ -104,6 +104,6 @@ family (`inet` vs `ip`), or the provider's own firewall in front.
 
 ## cloudflare
 
-tunnels and warp connectors dial out from the box. no inbound port, no dns
+tunnels dial out from the box. no inbound port, no dns
 record pointing at the vps, no certificate to renew. if you add a tunnel and
 also open 443 "for safety", you reopened the thing the tunnel was avoiding.

@@ -139,6 +139,9 @@ live deployment verification remains pending.
   firewall rules and a successful new login on the configured port.
 - [ ] verify a firewall rewrite restores docker networking and fail2ban bans.
   check published docker ports separately from the host input policy.
+- [ ] prove cloudflared with a real dashboard token: official apt repo, host
+  unit active, `/etc/cloudflared/token` mode 0600, dashboard route changes
+  apply without a restart.
 - [ ] run the audit with and without root, with and without config. verify
   failures exit `1`, usage errors exit `2` and warnings alone exit `0`.
 - [ ] compare every enabled module's resulting state with its audit checks.

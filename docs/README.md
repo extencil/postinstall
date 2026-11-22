@@ -13,7 +13,7 @@ will forget by the next provider.
   - [sysctl](hardening/sysctl.md)
   - [updates](hardening/updates.md)
 - network
-  - [cloudflare tunnel and mesh](network/cloudflare.md)
+  - [cloudflare tunnel](network/cloudflare.md)
 - runtimes
   - [docker](runtimes/docker.md)
   - [python](runtimes/python.md)

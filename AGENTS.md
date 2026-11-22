@@ -70,7 +70,6 @@ modules and their places:
 | node | `82-node.sh` | `ENABLE_NODE` | `docs/runtimes/node-go.md` |
 | go | `83-go.sh` | `ENABLE_GO` | `docs/runtimes/node-go.md` |
 | cloudflared | `90-cloudflared.sh` | `ENABLE_CLOUDFLARED` | `docs/network/cloudflare.md` |
-| warp | `91-warp.sh` | `ENABLE_WARP` | `docs/network/cloudflare.md` |
 | dotfiles | `95-dotfiles.sh` | `ENABLE_DOTFILES` | `docs/secrets/dotfiles.md` |
 | verify | `99-verify.sh` | `ENABLE_VERIFY` | `docs/audit.md` |
 
