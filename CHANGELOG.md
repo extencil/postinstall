@@ -7,6 +7,15 @@ versions follow semver for the scripts.
 
 ### added
 
+- `users` generates a 64-character password when `NEW_USER_PASSWORD` is empty,
+  stores it root-only, reuses it on reruns and refuses to export it to children
+- `DISABLE_DEFAULT_USERS=debian` disables the provider account with a nologin
+  shell, locked password, expiry, group removal, sudoers scrub and sshd
+  `DenyUsers`, only after `NEW_USER` has a usable key
+- `ssh` writes an effective `DenyUsers` line and filters disabled accounts out
+  of `SSH_ALLOW_USERS`
+- audit checks the generated password state, disabled-account shell/lock/expiry/
+  groups/sudoers, effective `AllowUsers` / `DenyUsers` and key ownership
 - `ssh_prank` module: a bundled Paramiko decoy on tcp/22, target-host apt
   dependencies, bounded connections, private host key and sandboxed systemd
   service, with config, live audit checks and recovery documentation
@@ -17,6 +26,12 @@ versions follow semver for the scripts.
 
 ### changed
 
+- the ssh lockout guard validates effective home, key material, ownership and
+  modes, and requires `SSH_ALLOW_USERS` to permit `NEW_USER`
+- `SSH_PUBKEY_FILE` honours relative paths, never silently loses to the root
+  fallback, and `authorized_keys` writes go through `write_file`
+- inline `SSH_PUBKEY` wins over `SSH_PUBKEY_FILE`; an explicitly selected
+  source that is missing or malformed aborts instead of falling back
 - real ssh defaults to tcp/1 across deployment, fail2ban, audit and docs;
   existing config values still win, and invalid port numbers abort before changes
 - nftables port sets use comma-separated elements when multiple ports are set

@@ -28,8 +28,9 @@ exit codes:
 | section | what it looks at |
 | --- | --- |
 | system | debian 13, systemd as pid 1, clock sync, pending reboot, apparmor |
-| user and sudo | user exists, sudo and docker group, key file and modes, root locked |
-| ssh | effective `sshd -T` values, drop-in present, listener on the port, password leftovers |
+| user and sudo | user exists, sudo and docker group, key material and modes, password state, root locked |
+| disabled accounts | nologin shell, locked password, expiry, no sudo/docker group, no sudoers grant |
+| ssh | effective `sshd -T` values, allow/deny lists, drop-in present, listener on the port, password leftovers |
 | ssh prank | service active/enabled, tcp/22 ownership, host key mode, effective sandbox settings, banner |
 | firewall | nftables active, `table inet filter`, drop policies, real ssh, decoy and extra ports |
 | fail2ban | service, sshd jail, current and total bans |

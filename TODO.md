@@ -98,20 +98,33 @@ live deployment verification remains pending.
 
 ## access and file handling
 
-- [ ] route the file-source branch in `10-users.sh` through `write_file`.
-  it currently uses `install` directly and bypasses the config backup helper.
+- [x] route the file-source branch in `10-users.sh` through `write_file`.
+  inline and existing-key branches use it too.
 - [ ] verify the key-only user can actually use sudo with `SUDO_NOPASSWD=0`.
-  `adduser --disabled-password` creates the user without a usable password;
-  document or resolve the bootstrap path before calling access complete.
-- [ ] strengthen the ssh lockout check beyond a nonempty `authorized_keys`.
-  verify valid keys, ownership, permissions, effective `AuthorizedKeysFile`
-  and that `SSH_ALLOW_USERS` permits the intended account.
-- [ ] verify the user's home through the account database. users and ssh
-  currently assume `/home/$NEW_USER`, including for an existing account.
+  the generated password is stored root-only and a container check proved
+  `sudo -S` accepts it; live key-only login still needs proof.
+- [x] strengthen the ssh lockout check beyond a nonempty `authorized_keys`.
+  it now checks key material, owner, modes, effective home and that
+  `SSH_ALLOW_USERS` permits the intended account.
+- [x] verify the user's home through the account database. users and ssh use
+  `getent passwd` instead of assuming `/home/$NEW_USER`.
 - [ ] verify an unchanged rerun skips ownership changes, permission changes,
-  daemon reloads and service restarts where state already matches.
+  daemon reloads and service restarts where state already matches. users
+  module reruns are clean in a container; services still need a live host.
 - [ ] verify invalid ssh configuration leaves a recoverable file on disk.
   `sshd -t` prevents a restart, but the drop-in has already been written.
+
+## default account disable
+
+- [ ] prove on a fresh debian 13 image that `debian` ends with
+  `/usr/sbin/nologin`, password `L`, a non-never expiry, no sudo/docker groups
+  and no cloud-init sudoers grant.
+- [ ] prove sshd rejects `debian` with a key and with a password, including
+  when provider cloud-init re-adds its drop-in after a reboot.
+- [ ] prove `users` refuses to disable the account when `NEW_USER` has no key
+  and `SSH_ALLOW_PASSWORD=0`.
+- [ ] prove a second identical run changes no password hash, key mode, sudoers
+  file, account state or service on a live host.
 
 ## disposable host verification
 

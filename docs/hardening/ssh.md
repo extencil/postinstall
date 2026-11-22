@@ -23,7 +23,8 @@ effective settings:
 | `LoginGraceTime` | `20` | |
 | `X11Forwarding` | `no` | |
 | `AllowTcpForwarding` | `yes` | controlled by `SSH_ALLOW_TCP_FORWARDING` |
-| `AllowUsers` | `NEW_USER` | controlled by `SSH_ALLOW_USERS` |
+| `AllowUsers` | `NEW_USER` | controlled by `SSH_ALLOW_USERS`; disabled accounts are filtered out |
+| `DenyUsers` | `DISABLE_DEFAULT_USERS` | deny wins over allow when cloud-init fights back |
 | `LogLevel` | `VERBOSE` | fingerprint logging, more for the journal |
 
 `sshd -t` runs before any restart. if it fails the script stops with the old
@@ -32,13 +33,50 @@ parse never reaches a restart.
 
 ## keys come first
 
-`users` copies `SSH_PUBKEY_FILE` (default `/root/.ssh/authorized_keys`) into
-`/home/NEW_USER/.ssh/authorized_keys`, sets ownership and `0600`, and only then
-does `ssh` run. if no key exists anywhere, `ssh` refuses to disable passwords
-unless you set `SSH_ALLOW_PASSWORD=1`.
+`users` installs `SSH_PUBKEY` (inline, one key), `SSH_PUBKEY_FILE` (one key per
+line, relative paths resolve against the repo), or leaves an existing
+`/home/NEW_USER/.ssh/authorized_keys` alone. only when none of those exist does
+it fall back to `/root/.ssh/authorized_keys`. an explicitly selected source that
+is missing or malformed aborts the run instead of silently using the fallback.
+it sets ownership and `0600`, and only then does `ssh` run. if no key exists
+anywhere, `ssh` refuses to disable passwords unless you set
+`SSH_ALLOW_PASSWORD=1`.
 
 that refusal is the point. the script is allowed to be annoying. it is not
-allowed to lock you out.
+allowed to lock you out. the guard also checks the effective home from the
+account database, key material, `.ssh` mode `0700`, owner, and `0600` on
+`authorized_keys` before it writes the password-only-off config.
+
+## the bootstrap account and the old one
+
+`NEW_USER` gets a generated 64-character hex password when it is created.
+`NEW_USER_PASSWORD` in the config wins; otherwise a password file from an
+earlier run is reused and a missing one is generated with
+`openssl rand -hex 32`. the password is never printed and is removed from the
+exported environment before apt or curl sees it. it lands in
+`/root/postinstall-<user>.password`, mode `0600`.
+
+with `SUDO_NOPASSWD=0` that password is what `sudo` asks for. key-only login
+cannot read a root-only file, so either read it as root from the provider
+console before closing the bootstrap shell, or use `SUDO_NOPASSWD=1` for the
+bootstrap account. the audit tells you when neither path is usable.
+
+`DISABLE_DEFAULT_USERS` defaults to `debian`. the module refuses to touch the
+old account until `NEW_USER` has a usable key, or until `SSH_ALLOW_PASSWORD=1`
+makes the generated password a real way in. then, per account:
+
+- remove sudo and docker membership
+- shell to `/usr/sbin/nologin`
+- lock the password
+- expire the account (`chage -E 1`)
+- terminate sessions and remaining processes
+- scrub sudoers lines that name the account, including cloud-init's
+  `90-cloud-init-users`
+- add the account to sshd `DenyUsers`
+
+`NEW_USER` is rejected if it appears in the disable list. the audit checks the
+shell, lock, expiry, groups, sudoers grants and effective `AllowUsers` /
+`DenyUsers` values.
 
 ## socket activation
 

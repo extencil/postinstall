@@ -48,6 +48,10 @@ anything is apt.
 then prove you can log in as the new user on the new port before you close the
 root shell. use the provider console if you enjoy not being locked out.
 
+the generated password is never printed. it lands in
+`/root/postinstall-<user>.password` (mode `0600`). with `SUDO_NOPASSWD=0`, read
+it as root from the provider console before you rely on password-based sudo.
+
 ## what runs, in order
 
 order is not decoration. the firewall opens `SSH_PORT` before sshd moves to it,
@@ -69,7 +73,7 @@ you put a token in the config.
 | module | what it actually does |
 | --- | --- |
 | `preflight` | debian check, apt index, timezone, timesyncd, hostname |
-| `users` | creates `NEW_USER`, sudo, ssh key, locks the root password |
+| `users` | creates `NEW_USER`, generated password, sudo, ssh key, locks root, disables `debian` |
 | `firewall` | nftables, input drop, only ssh + your extra ports |
 | `ssh` | key only, no root, real ssh on tcp/1, socket aware |
 | `ssh_prank` | reject-only decoy on tcp/22, bounded connections, separate service |
@@ -104,14 +108,17 @@ sudo bash debian13-postinstall.sh --audit
 anything you can write in bash works, including `$(cat token)`. two things to
 know:
 
-- it holds tunnel tokens. keep it out of git, keep it `0600`, and prefer
-  `CLOUDFLARED_TOKEN_FILE` over inlining the token.
+- it holds tunnel tokens and, if you set one, a bootstrap password. keep it
+  out of git, keep it `0600`, and prefer token files over inlining the token.
 - precedence is flags > config file > environment > defaults.
 
 the parts people touch:
 
 ```bash
 NEW_USER=ops
+NEW_USER_PASSWORD=""                 # empty = generate 64 hex chars on first run
+NEW_USER_PASSWORD_FILE=""            # empty = /root/postinstall-<user>.password
+DISABLE_DEFAULT_USERS=debian         # lock, expire, nologin, deny ssh
 SSH_PORT=1
 TIMEZONE=UTC
 SSH_PUBKEY_FILE=/root/.ssh/authorized_keys
@@ -130,12 +137,16 @@ ENABLE_WARP=0
 | key | default | what |
 | --- | --- | --- |
 | `NEW_USER` | `ops` | the human account |
+| `NEW_USER_PASSWORD` | empty | explicit bootstrap password; empty generates 64 hex chars |
+| `NEW_USER_PASSWORD_FILE` | empty | generated password path, default `/root/postinstall-<user>.password` |
+| `DISABLE_DEFAULT_USERS` | `debian` | provider accounts to lock, expire, nologin and deny over ssh |
 | `SSH_PORT` | `1` | real ssh port, firewall follows; decoy uses `22` |
 | `SSH_PRANK_BANNER_FILE` | empty | optional public UTF-8 banner for the decoy |
 | `HOSTNAME_SET` | empty | leave the provider hostname alone |
 | `TIMEZONE` | `UTC` | iana name |
-| `SSH_PUBKEY_FILE` | empty | falls back to `/root/.ssh/authorized_keys` |
-| `SSH_ALLOW_USERS` | empty | empty means only `NEW_USER` |
+| `SSH_PUBKEY_FILE` | empty | key file, relative paths resolve against the repo; falls back to `/root/.ssh/authorized_keys` |
+| `SSH_PUBKEY` | empty | inline public key, wins over the file |
+| `SSH_ALLOW_USERS` | empty | empty means only `NEW_USER`; disabled accounts are filtered out |
 | `SSH_ALLOW_PASSWORD` | `0` | set `1` only if you enjoy passwords |
 | `SSH_ALLOW_TCP_FORWARDING` | `1` | keep `-L`/`-R` working |
 | `EXTRA_TCP_PORTS` | empty | inbound tcp, space or comma separated |

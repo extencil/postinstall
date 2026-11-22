@@ -19,6 +19,9 @@ VERSION="0.1.0"
 # ----------------------------- defaults -----------------------------
 
 : "${NEW_USER:=ops}"
+: "${NEW_USER_PASSWORD:=}"
+: "${NEW_USER_PASSWORD_FILE:=}"
+: "${DISABLE_DEFAULT_USERS:=debian}"
 : "${SSH_PORT:=1}"
 : "${HOSTNAME_SET:=}"
 : "${TIMEZONE:=UTC}"
@@ -135,6 +138,10 @@ if [[ -n $CONFIG_FILE ]]; then
   # shellcheck disable=SC1090
   source "$CONFIG_FILE"
   set +a
+  # Do not leak a bootstrap password into apt, curl or any other child.
+  if [[ -n ${NEW_USER_PASSWORD:-} ]]; then
+    export -n NEW_USER_PASSWORD
+  fi
 fi
 
 # --------------------------- flag parsing ---------------------------
@@ -234,6 +241,8 @@ fi
 
 # Reject invalid port input before preflight or the firewall changes anything.
 validate_ssh_port
+validate_new_user
+validate_ssh_users
 if [[ $SSH_PORT == 22 ]] && { module_enabled ssh_prank || service_active postinstall-ssh-prank; }; then
   die "SSH_PORT=22 conflicts with ssh_prank. choose another real ssh port or stop and disable the decoy"
 fi
@@ -309,6 +318,9 @@ log_info "audit:   sudo bash $SCRIPT_DIR/audit/debian13-audit.sh"
 log_info "re-run:  sudo bash $SCRIPT_DIR/debian13-postinstall.sh"
 if [[ $SSH_PORT != 22 ]]; then
   log_info "test:    ssh -p $SSH_PORT $NEW_USER@<host>   # keep this shell open"
+fi
+if module_enabled users && [[ -z ${NEW_USER_PASSWORD:-} ]]; then
+  log_info "password: ${NEW_USER_PASSWORD_FILE:-/root/postinstall-$NEW_USER.password} (0600, root only)"
 fi
 log_info "backups: $BACKUP_ROOT"
 printf '\n'

@@ -1,24 +1,66 @@
 #!/usr/bin/env bash
-# module: ssh - key only, no root login, drop-in that wins over cloud-init.
+# module: ssh - key only, no root login, one allowlist, drop-in that wins over cloud-init.
 
 module_ssh() {
   log_step "ssh"
 
   install_pkgs openssh-server
 
-  local keys=/home/$NEW_USER/.ssh/authorized_keys
-  if [[ ! -s $keys ]] && [[ ${SSH_ALLOW_PASSWORD:-0} != 1 ]]; then
-    die "no ssh key for $NEW_USER and SSH_ALLOW_PASSWORD=0 would lock you out. fix the key, or set SSH_ALLOW_PASSWORD=1"
+  local home keys
+  home=$(getent passwd "$NEW_USER" | cut -d: -f6 || true)
+  if [[ -z $home ]]; then
+    ((DRY_RUN)) || die "cannot resolve home directory for $NEW_USER"
+    home=/home/$NEW_USER
+  fi
+  keys=$home/.ssh/authorized_keys
+  if [[ ${SSH_ALLOW_PASSWORD:-0} != 1 ]]; then
+    if [[ -s $keys ]]; then
+      if ! grep -Eq '(^|[[:space:]])(ssh-(rsa|ed25519|dss)|ecdsa-sha2-[^[:space:]]+|sk-ssh-[^[:space:]]+)[[:space:]]+AAAA' "$keys"; then
+        die "no usable public key in $keys, refusing to disable password auth"
+      fi
+      [[ $(stat -c '%a' "$home/.ssh") == 700 ]] || die "$home/.ssh is not mode 700, sshd would ignore the key"
+      [[ $(stat -c '%U' "$home/.ssh") == "$NEW_USER" ]] || die "$home/.ssh is not owned by $NEW_USER"
+      [[ $(stat -c '%a' "$keys") == 600 ]] || die "$keys is not mode 600, sshd would ignore the key"
+      [[ $(stat -c '%U' "$keys") == "$NEW_USER" ]] || die "$keys is not owned by $NEW_USER"
+    elif ((DRY_RUN)); then
+      log_dry "expect $keys after the users module"
+    else
+      die "no ssh key for $NEW_USER and SSH_ALLOW_PASSWORD=0 would lock you out. fix the key, or set SSH_ALLOW_PASSWORD=1"
+    fi
   fi
 
-  local allow_users=${SSH_ALLOW_USERS//,/ }
+  local -a requested=() disabled=()
+  local allow_users="" deny_users="" u
+  local disabled_list=${DISABLE_DEFAULT_USERS:-} requested_list=${SSH_ALLOW_USERS:-}
+  read -r -a requested <<<"${requested_list//,/ }"
+  read -r -a disabled <<<"${disabled_list//,/ }"
+  for u in "${requested[@]}"; do
+    if [[ " ${disabled[*]} " == *" $u "* ]]; then
+      log_warn "ignoring disabled account $u in SSH_ALLOW_USERS"
+      continue
+    fi
+    allow_users+="$u "
+  done
+  allow_users=${allow_users% }
   [[ -n $allow_users ]] || allow_users=$NEW_USER
+  if [[ " $allow_users " != *" $NEW_USER "* && " $allow_users " != *" $NEW_USER@"* ]]; then
+    die "SSH_ALLOW_USERS does not permit $NEW_USER, key-only login would be impossible"
+  fi
+  for u in "${disabled[@]}"; do
+    [[ $u == root ]] && continue
+    [[ $u == "$NEW_USER" ]] && die "DISABLE_DEFAULT_USERS contains NEW_USER=$NEW_USER"
+    [[ " $deny_users " == *" $u "* ]] || deny_users+="$u "
+  done
+  deny_users=${deny_users% }
+
   local password_auth=no
   [[ ${SSH_ALLOW_PASSWORD:-0} == 1 ]] && password_auth=yes
   local tcp_forward=no
   [[ ${SSH_ALLOW_TCP_FORWARDING:-1} == 1 ]] && tcp_forward=yes
   local auth_methods=""
   [[ $password_auth == no ]] && auth_methods="AuthenticationMethods publickey"
+  local deny_line=""
+  [[ -n $deny_users ]] && deny_line="DenyUsers $deny_users"
 
   # 00- prefix: sshd takes the first value it sees, and this sorts before
   # 50-cloud-init.conf which loves re-enabling password auth.
@@ -47,6 +89,7 @@ PermitTunnel no
 
 UsePAM yes
 LogLevel VERBOSE
+$deny_line
 AllowUsers $allow_users
 EOF
 

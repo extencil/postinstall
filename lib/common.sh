@@ -169,3 +169,31 @@ validate_ssh_port() {
     die "SSH_PORT must be an integer between 1 and 65535, without leading zeros"
   fi
 }
+
+# NEW_USER lands in adduser, sudoers and AllowUsers before anyone logs in.
+validate_new_user() {
+  [[ ${NEW_USER:-} =~ ^[a-z_][a-z0-9_-]{0,31}$ ]] ||
+    die "NEW_USER must be a lowercase unix account name, got '${NEW_USER:-}'"
+  [[ $NEW_USER != root ]] || die "NEW_USER=root defeats the point of a separate account"
+  local -a disabled=()
+  local u disabled_list=${DISABLE_DEFAULT_USERS:-}
+  read -r -a disabled <<<"${disabled_list//,/ }"
+  for u in "${disabled[@]}"; do
+    [[ $u != "$NEW_USER" ]] || die "NEW_USER=$NEW_USER is also listed in DISABLE_DEFAULT_USERS"
+  done
+}
+
+# Fail before users disables the old account if the ssh allowlist has no path
+# back in for NEW_USER.
+validate_ssh_users() {
+  local -a allow=()
+  local u entry allow_list=${SSH_ALLOW_USERS:-}
+  read -r -a allow <<<"${allow_list//,/ }"
+  if ((${#allow[@]} == 0)); then
+    return 0
+  fi
+  for entry in "${allow[@]}"; do
+    [[ $entry == "$NEW_USER" || $entry == "$NEW_USER"@* ]] && return 0
+  done
+  die "SSH_ALLOW_USERS does not permit $NEW_USER"
+}

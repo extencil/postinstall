@@ -5,9 +5,12 @@ provider day. ten minutes, no thinking required.
 ## before you run anything
 
 - [ ] note the provider console url, you will need it if ssh breaks
-- [ ] copy the public key into `SSH_PUBKEY_FILE` or make sure the provider
-      injected one into `/root/.ssh/authorized_keys`
+- [ ] copy the public key into `SSH_PUBKEY_FILE` or `SSH_PUBKEY` (or make sure
+      the provider injected one into `/root/.ssh/authorized_keys`)
 - [ ] pick the new user name and ssh port in the config (`1/tcp` by default)
+- [ ] leave `DISABLE_DEFAULT_USERS=debian` so the provider account is neutered
+- [ ] decide what `sudo` should ask: read the generated password as root, or
+      set `SUDO_NOPASSWD=1` for the bootstrap account
 - [ ] allow real ssh at the provider firewall
 - [ ] decide cloudflare: named tunnel, mesh connector, both, none
 - [ ] put tokens in `/root/.secrets/*.token` with `chmod 600`
@@ -27,6 +30,8 @@ would write and every package it would install. no state changes.
 
 - [ ] open a second terminal, log in as `NEW_USER` on `SSH_PORT`
 - [ ] `sudo -v` works
+- [ ] `getent passwd debian` shows `nologin`, `passwd -S debian` shows `L`
+- [ ] `sudo sshd -T | grep -E '^(allowusers|denyusers)'` shows only your user
 - [ ] tcp/22 shows the prank banner and refuses authentication
 - [ ] `sudo bash audit/debian13-audit.sh` says zero fails
 - [ ] `docker run --rm hello-world` if docker is on

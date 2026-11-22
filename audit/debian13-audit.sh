@@ -13,6 +13,9 @@ ROOT_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
 VERSION="0.1.0"
 
 NEW_USER=ops
+NEW_USER_PASSWORD=""
+NEW_USER_PASSWORD_FILE=""
+DISABLE_DEFAULT_USERS=debian
 SSH_PORT=1
 ENABLE_SSH_PRANK=1
 EXTRA_TCP_PORTS=""
@@ -82,6 +85,14 @@ has() { command -v "$1" >/dev/null 2>&1; }
 unit_active() { systemctl is-active --quiet "$1" 2>/dev/null; }
 unit_enabled() { systemctl is-enabled --quiet "$1" 2>/dev/null; }
 is_root() { [[ ${EUID:-$(id -u)} -eq 0 ]]; }
+
+user_home() { getent passwd "$1" 2>/dev/null | cut -d: -f6; }
+user_shell() { getent passwd "$1" 2>/dev/null | cut -d: -f7; }
+password_state() { passwd -S "$1" 2>/dev/null | awk '{print $2}'; }
+in_group() { id -nG "$1" 2>/dev/null | tr ' ' '\n' | grep -qx "$2"; }
+valid_key_file() {
+  grep -Eq '(^|[[:space:]])(ssh-(rsa|ed25519|dss)|ecdsa-sha2-[^[:space:]]+|sk-ssh-[^[:space:]]+)[[:space:]]+AAAA' "$1" 2>/dev/null
+}
 
 # compare a sysctl key with the expected value
 sysctl_is() {
@@ -153,36 +164,85 @@ section "user and sudo"
 
 if id -u "$NEW_USER" >/dev/null 2>&1; then
   ok "user $NEW_USER exists"
-  if id -nG "$NEW_USER" | tr ' ' '\n' | grep -qx sudo; then
+  if in_group "$NEW_USER" sudo; then
     ok "$NEW_USER in sudo group"
   else
     bad "$NEW_USER not in sudo group"
   fi
-  if id -nG "$NEW_USER" | tr ' ' '\n' | grep -qx docker; then
+  if in_group "$NEW_USER" docker; then
     warn "$NEW_USER in docker group (root-equivalent, on purpose?)"
   fi
 
-  keys=/home/$NEW_USER/.ssh/authorized_keys
-  if [[ -s $keys ]]; then
-    ok "authorized_keys has $(grep -c '^ssh-\|^ecdsa-\|^sk-' "$keys" 2>/dev/null || printf '?') key(s)"
+  home=$(user_home "$NEW_USER")
+  keys=$home/.ssh/authorized_keys
+  if [[ -s $keys ]] && valid_key_file "$keys"; then
+    ok "authorized_keys has a usable public key"
     perms=$(stat -c '%a' "$keys")
     if [[ $perms == 600 ]]; then
       ok "authorized_keys mode 600"
     else
       bad "authorized_keys mode $perms, wanted 600"
     fi
-    hperms=$(stat -c '%a' "/home/$NEW_USER/.ssh")
+    owner=$(stat -c '%U' "$keys")
+    if [[ $owner == "$NEW_USER" ]]; then
+      ok "authorized_keys owned by $NEW_USER"
+    else
+      bad "authorized_keys owned by $owner, wanted $NEW_USER"
+    fi
+    hperms=$(stat -c '%a' "$home/.ssh")
     if [[ $hperms == 700 ]]; then
       ok ".ssh mode 700"
     else
-      warn ".ssh mode $hperms, wanted 700"
+      bad ".ssh mode $hperms, wanted 700"
     fi
+    howner=$(stat -c '%U' "$home/.ssh")
+    if [[ $howner == "$NEW_USER" ]]; then
+      ok ".ssh owned by $NEW_USER"
+    else
+      bad ".ssh owned by $howner, wanted $NEW_USER"
+    fi
+  elif [[ -s $keys ]]; then
+    bad "authorized_keys has no usable public key"
   else
     bad "no authorized_keys for $NEW_USER"
   fi
 
+  if is_root; then
+    pstate=$(password_state "$NEW_USER")
+    if [[ $pstate == P ]]; then
+      ok "$NEW_USER has a usable password"
+    elif [[ ${SUDO_NOPASSWD:-0} == 1 ]]; then
+      warn "$NEW_USER password is not set; key login plus passwordless sudo still works"
+    else
+      bad "$NEW_USER has no usable password and SUDO_NOPASSWD=0, sudo and console login fail"
+    fi
+    pwfile=${NEW_USER_PASSWORD_FILE:-/root/postinstall-$NEW_USER.password}
+    if [[ -n ${NEW_USER_PASSWORD:-} ]]; then
+      skip "password supplied in config, no generated file expected"
+    elif [[ -f $pwfile ]]; then
+      pwperms=$(stat -c '%a' "$pwfile")
+      if [[ $pwperms == 600 ]]; then
+        ok "generated password file mode 600"
+      else
+        bad "generated password file mode $pwperms, wanted 600"
+      fi
+      pwowner=$(stat -c '%U:%G' "$pwfile")
+      if [[ $pwowner == root:root ]]; then
+        ok "generated password file owned by root"
+      else
+        bad "generated password file owned by $pwowner, wanted root:root"
+      fi
+    elif [[ ${SUDO_NOPASSWD:-0} == 1 ]]; then
+      warn "no generated password file at $pwfile (passwordless sudo still works)"
+    else
+      bad "no generated password file at $pwfile"
+    fi
+  else
+    skip "password state needs root"
+  fi
+
   if [[ ${ENABLE_SHELL:-1} == 1 ]]; then
-    login_shell=$(getent passwd "$NEW_USER" | cut -d: -f7)
+    login_shell=$(user_shell "$NEW_USER")
     if [[ $login_shell == */zsh ]]; then
       ok "login shell is zsh"
     else
@@ -206,6 +266,68 @@ if [[ -f $sudoers ]]; then
   else
     warn "$sudoers exists but SUDO_NOPASSWD=0"
   fi
+fi
+
+# --------------------------- disabled accounts ----------------------
+
+section "disabled accounts"
+
+disabled=()
+read -r -a disabled <<<"${DISABLE_DEFAULT_USERS//,/ }"
+if ((${#disabled[@]} == 0)); then
+  skip "no default accounts configured for disabling"
+else
+  for u in "${disabled[@]}"; do
+    if [[ $u == root ]]; then
+      bad "DISABLE_DEFAULT_USERS contains root"
+      continue
+    fi
+    if [[ $u == "$NEW_USER" ]]; then
+      bad "DISABLE_DEFAULT_USERS contains NEW_USER=$NEW_USER"
+      continue
+    fi
+    if ! id -u "$u" >/dev/null 2>&1; then
+      skip "default account $u not present"
+      continue
+    fi
+
+    shell=$(user_shell "$u")
+    if [[ $shell == */nologin || $shell == */false ]]; then
+      ok "$u shell is $shell"
+    else
+      bad "$u shell is ${shell:-unknown}, wanted nologin"
+    fi
+    for g in sudo docker; do
+      if in_group "$u" "$g"; then
+        bad "$u still in $g group"
+      else
+        ok "$u not in $g group"
+      fi
+    done
+
+    if is_root; then
+      state=$(password_state "$u")
+      if [[ $state == L ]]; then
+        ok "$u password locked"
+      else
+        bad "$u password state is ${state:-unknown}, wanted L"
+      fi
+      expire=$(awk -F: -v name="$u" '$1 == name { print $8 }' /etc/shadow 2>/dev/null || true)
+      if [[ -n $expire && $expire != 0 ]]; then
+        ok "$u account expired"
+      else
+        bad "$u account does not expire"
+      fi
+      grants=$(grep -lE "^[[:space:]]*${u}[[:space:]]" /etc/sudoers /etc/sudoers.d/* 2>/dev/null || true)
+      if [[ -z $grants ]]; then
+        ok "$u has no sudoers grant"
+      else
+        bad "$u still has a sudoers grant: $(tr '\n' ' ' <<<"$grants")"
+      fi
+    else
+      skip "$u password, expiry and sudoers checks need root"
+    fi
+  done
 fi
 
 # -------------------------------- ssh -------------------------------
@@ -235,9 +357,43 @@ else
     else
       check_sshd passwordauthentication no
       check_sshd kbdinteractiveauthentication no
+      check_sshd authenticationmethods publickey
     fi
     check_sshd x11forwarding no
     check_sshd maxauthtries 3
+
+    allow_got=$(awk '$1 == "allowusers" { $1=""; sub(/^ /,""); print; exit }' <<<"$sshd_t")
+    allow_want=""
+    read -r -a wanted <<<"${SSH_ALLOW_USERS//,/ }"
+    for u in "${wanted[@]}"; do
+      [[ " ${disabled[*]} " == *" $u "* ]] && continue
+      allow_want+="$u "
+    done
+    allow_want=${allow_want% }
+    [[ -n $allow_want ]] || allow_want=$NEW_USER
+    if [[ $allow_got == "$allow_want" ]]; then
+      ok "sshd allowusers $allow_want"
+    else
+      bad "sshd allowusers = '${allow_got:-unset}', wanted '$allow_want'"
+    fi
+    if [[ " $allow_got " != *" $NEW_USER "* && " $allow_got " != *" $NEW_USER@"* ]]; then
+      bad "sshd allowusers does not contain $NEW_USER"
+    fi
+    deny_got=$(awk '$1 == "denyusers" { $1=""; sub(/^ /,""); print; exit }' <<<"$sshd_t")
+    missing_deny=0
+    for u in "${disabled[@]}"; do
+      [[ $u == root || $u == "$NEW_USER" ]] && continue
+      if [[ " $allow_got " == *" $u "* ]]; then
+        bad "disabled account $u still in sshd allowusers"
+      fi
+      if [[ " $deny_got " != *" $u "* ]]; then
+        bad "disabled account $u missing from sshd denyusers"
+        missing_deny=1
+      fi
+    done
+    if ((${#disabled[@]})) && ((missing_deny == 0)); then
+      ok "disabled accounts blocked by sshd denyusers"
+    fi
     ports=$(awk '$1 == "port" {print $2}' <<<"$sshd_t")
     if [[ $ports == "$SSH_PORT" ]]; then
       ok "sshd port $SSH_PORT only"
