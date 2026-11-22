@@ -16,6 +16,7 @@ NEW_USER=ops
 NEW_USER_PASSWORD=""
 NEW_USER_PASSWORD_FILE=""
 DISABLE_DEFAULT_USERS=debian
+LOCK_ROOT_PASSWORD=1
 SSH_PORT=1
 ENABLE_CLOUDFLARED=0
 ENABLE_SSH_PRANK=1
@@ -255,7 +256,9 @@ else
   bad "user $NEW_USER does not exist"
 fi
 
-if [[ $(passwd -S root 2>/dev/null | awk '{print $2}') == L ]]; then
+if [[ ${LOCK_ROOT_PASSWORD:-1} != 1 ]]; then
+  warn "root password left unlocked (LOCK_ROOT_PASSWORD=0)"
+elif [[ $(passwd -S root 2>/dev/null | awk '{print $2}') == L ]]; then
   ok "root password locked"
 else
   warn "root password not locked (PasswordAuthentication no still saves you)"

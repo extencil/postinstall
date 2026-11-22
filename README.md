@@ -98,6 +98,7 @@ flags:
 sudo bash debian13-postinstall.sh --dry-run
 sudo bash debian13-postinstall.sh --only firewall,ssh,ssh_prank,fail2ban
 sudo bash debian13-postinstall.sh --skip docker,node,go
+sudo bash debian13-postinstall.sh --only preflight,users,firewall,ssh --keep-default-users --keep-root-password
 sudo bash debian13-postinstall.sh --user ops --port 2222 --timezone Europe/Amsterdam
 sudo bash debian13-postinstall.sh --list
 sudo bash debian13-postinstall.sh --audit
@@ -139,6 +140,7 @@ ENABLE_CLOUDFLARED=1
 | `NEW_USER_PASSWORD` | empty | inline bootstrap password; prefer the file |
 | `NEW_USER_PASSWORD_FILE` | empty | chosen sudo password file, `0400`/`0600`; generated if missing |
 | `DISABLE_DEFAULT_USERS` | `debian` | provider accounts to lock, expire, nologin and deny over ssh |
+| `LOCK_ROOT_PASSWORD` | `1` | lock root after sudo works; `0` only for a staged POC |
 | `SSH_PORT` | `1` | real ssh port, firewall follows; decoy uses `22` |
 | `SSH_PRANK_BANNER_FILE` | empty | optional public UTF-8 banner for the decoy |
 | `HOSTNAME_SET` | empty | leave the provider hostname alone |

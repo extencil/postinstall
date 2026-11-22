@@ -16,6 +16,47 @@ provider day. ten minutes, no thinking required.
 - [ ] put tokens in `/root/.secrets/*.token` with `chmod 600`
 - [ ] `config/postinstall.env` exists, `chmod 600`, not in git
 
+## staged first host (POC)
+
+do this on one disposable or least critical host before the other five. keep the
+provider console open and never close the current root session until the new
+login is proven.
+
+phase 1, keep the old account and root password:
+
+```bash
+sudo bash debian13-postinstall.sh --dry-run
+sudo bash debian13-postinstall.sh --only preflight,users,firewall,ssh \
+  --keep-default-users --keep-root-password
+```
+
+prove from a second terminal:
+
+```bash
+ssh -p 1 extencil@host
+sudo -v
+docker run --rm hello-world     # if docker is enabled
+```
+
+phase 2, disable `debian` and lock root after the new login works:
+
+```bash
+sudo bash debian13-postinstall.sh --only users,ssh
+getent passwd debian
+passwd -S debian
+sudo sshd -T | grep -E '^(allowusers|denyusers)'
+```
+
+phase 3, decoy and fail2ban:
+
+```bash
+sudo bash debian13-postinstall.sh --only firewall,ssh_prank,fail2ban
+sudo bash audit/debian13-audit.sh
+```
+
+repeat on the next host only after phase 3 is clean and a reboot still lets you
+in on `SSH_PORT`.
+
 ## run
 
 ```bash

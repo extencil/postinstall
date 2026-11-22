@@ -160,7 +160,9 @@ EOF
   fi
 
   # root stays usable through sudo, not through a password over ssh.
-  if [[ $(passwd -S root 2>/dev/null | awk '{print $2}' || true) == L ]]; then
+  if [[ ${LOCK_ROOT_PASSWORD:-1} != 1 ]]; then
+    log_warn "root password left unlocked for staged POC (LOCK_ROOT_PASSWORD=0)"
+  elif [[ $(passwd -S root 2>/dev/null | awk '{print $2}' || true) == L ]]; then
     log_skip "root password already locked"
   else
     run passwd -l root

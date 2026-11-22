@@ -22,6 +22,7 @@ VERSION="0.1.0"
 : "${NEW_USER_PASSWORD:=}"
 : "${NEW_USER_PASSWORD_FILE:=}"
 : "${DISABLE_DEFAULT_USERS:=debian}"
+: "${LOCK_ROOT_PASSWORD:=1}"
 : "${SSH_PORT:=1}"
 : "${HOSTNAME_SET:=}"
 : "${TIMEZONE:=UTC}"
@@ -84,6 +85,10 @@ options:
   --only LIST       run only these modules, comma separated (preflight still runs)
   --skip LIST       skip these modules, comma separated
   --dry-run         print what would change, touch nothing
+  --keep-default-users
+                    leave DISABLE_DEFAULT_USERS untouched for a staged POC
+  --keep-root-password
+                    do not lock the root password for a staged POC
   --yes             accepted for muscle memory, nothing prompts anyway
   --list            show modules and whether they are enabled, then exit
   --audit           run the audit only, then exit
@@ -167,6 +172,14 @@ while (($#)); do
       ;;
     --dry-run)
       DRY_RUN=1
+      shift
+      ;;
+    --keep-default-users)
+      DISABLE_DEFAULT_USERS=""
+      shift
+      ;;
+    --keep-root-password)
+      LOCK_ROOT_PASSWORD=0
       shift
       ;;
     --yes)
