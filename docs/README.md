@@ -20,6 +20,7 @@ will forget by the next provider.
   - [node and go](runtimes/node-go.md)
 - shell
   - [tooling](shell/tooling.md)
+  - [daily Zsh profile](shell/zsh-profile.md)
 - secrets
   - [dotfiles and secrets](secrets/dotfiles.md)
 - [audit](audit.md)

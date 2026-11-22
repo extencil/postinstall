@@ -7,6 +7,8 @@ versions follow semver for the scripts.
 
 ### added
 
+- opt-in Kali-inspired Zsh profile with Debian packages, an isolated trial and
+  login setup and rollback instructions
 - `audit-fleet.sh` for a sequential fleet audit with per-host `ssh -t` and a
   gitignored host list
 - first-VPS verification note with redacted staged-run evidence

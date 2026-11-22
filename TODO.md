@@ -3,6 +3,12 @@
 pending work and things to prove on a disposable debian 13 box. unchecked means
 unverified or not implemented. reading the script is not a successful login.
 
+## daily zsh profile
+
+- [ ] try the [Zsh profile](docs/shell/zsh-profile.md) over SSH and inside tmux
+  from the usual terminal client. Check redraw, key chords, theme colors and
+  second-login and rollback behavior.
+
 ## github ssh keys
 
 idea: keep the private key where it already belongs. optionally fetch the

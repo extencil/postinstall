@@ -226,6 +226,7 @@ the host list and captured output are gitignored. never commit real addresses.
 ├── AGENTS.md                     # canonical llm/harness contract
 ├── config/
 │   └── postinstall.env.example   # copy to postinstall.env, gitignored
+├── assets/shell/zsh/.zshrc       # optional interactive profile
 ├── lib/
 │   ├── common.sh                 # logging, run(), write_file(), backups
 │   └── modules/                  # one file per topic, numbered by order
@@ -236,7 +237,7 @@ the host list and captured output are gitignored. never commit real addresses.
     ├── hardening/                # ssh, firewall, fail2ban, sysctl, updates
     ├── network/cloudflare.md     # dashboard tunnel, host service
     ├── runtimes/                 # docker, python, node, go
-    ├── shell/tooling.md
+    ├── shell/                    # tooling and the daily zsh profile
     ├── secrets/dotfiles.md
     └── checklists/new-vps.md     # the boring paper checklist
 ```
@@ -262,6 +263,7 @@ lands in the same place instead of inventing its own rules.
 | [python](docs/runtimes/python.md) | uv, pipx, venvs |
 | [node and go](docs/runtimes/node-go.md) | version pins, why optional |
 | [tooling](docs/shell/tooling.md) | package list and the bat/fd renames |
+| [daily Zsh profile](docs/shell/zsh-profile.md) | copy-and-paste Debian setup for a Kali-inspired interactive shell |
 | [dotfiles and secrets](docs/secrets/dotfiles.md) | age, sops, gpg, clone order |
 | [audit](docs/audit.md) | wiring it into cron |
 | [first VPS verification](docs/verification/2026-11-22-first-vps.md) | what the staged live run proved and what it did not |

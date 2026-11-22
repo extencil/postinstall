@@ -42,6 +42,9 @@ a support ticket waiting to happen.
 if the dotfiles module is off, you get a bare zsh with debian's defaults. fine
 for a server, boring for a human.
 
+for a ready-to-try prompt, fuzzy search and both kali-style plugins, see the
+[daily Zsh profile](zsh-profile.md).
+
 ## what i do not install
 
 `docker-compose` v1, `node` from a tarball, `oh-my-zsh` from curl, `powerlevel10k`
